@@ -1,0 +1,45 @@
+[tool.poetry]
+package-mode = true 
+name = "dt-net"
+version = "0.1.0"
+description = "Network helper tools"
+authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/JavaWiz1/dt-net"
+keywords = ["python", "dt-tools", "network"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+include = ["CHANGELOG.md"]
+
+packages = [
+    { include = "dt_tools" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2"
+scapy = "^2.5"
+python-dateutil = "^2.9"
+dt-console = "*"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "piwheels"
+url = "https://www.piwheels.org/simple"
+priority = "supplemental"
+
+
+
+[tool.poetry.group.dev.dependencies]
+sphinx-rtd-theme = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

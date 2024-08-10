@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dt_tools.net.net_helper &mdash; dt-net  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            dt-net
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dt_tools.html">dt_tools namespace</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">dt-net</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dt_tools.net.net_helper</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dt_tools.net.net_helper</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Network utilities helper class.</span>
+
+<span class="sd">Functions to assist with network related information and tasks.</span>
+
+
+<span class="sd">- ping</span>
+<span class="sd">- local IP address</span>
+<span class="sd">- get ip for given hostname</span>
+<span class="sd">- get hostname for given ip</span>
+<span class="sd">- get mac address for given hostname or ip</span>
+<span class="sd">- get mac vendor</span>
+<span class="sd">- get local client info on LAN</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">ipaddress</span>
+<span class="kn">import</span> <span class="nn">platform</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">scapy.all</span> <span class="k">as</span> <span class="nn">scapy</span>
+<span class="kn">from</span> <span class="nn">loguru</span> <span class="kn">import</span> <span class="n">logger</span> <span class="k">as</span> <span class="n">LOGGER</span>
+
+<span class="kn">from</span> <span class="nn">dt_tools.os.os_helper</span> <span class="kn">import</span> <span class="n">OSHelper</span>
+
+<span class="n">_UNKNOWN</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span>
+
+<div class="viewcode-block" id="LAN_Client">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.LAN_Client">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">LAN_Client</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data class to hold Lan Client information.</span>
+
+<span class="sd">    Members:</span>
+<span class="sd">        ip: IP address.</span>
+<span class="sd">        mac: MAC address.</span>
+<span class="sd">        hostname: Hostname</span>
+<span class="sd">        vendor: MAC vendor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">mac</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">vendor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="LAN_Client.to_dict">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.LAN_Client.to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return LAN_Client as a dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LAN_Client_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+            <span class="n">LAN_Client_dict</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">LAN_Client_dict</span>        </div>
+</div>
+
+
+<span class="c1"># ===============================================================================================</span>
+<span class="k">def</span> <span class="nf">_get_ipaddress_obj</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">ipaddress</span><span class="o">.</span><span class="n">IPv4Address</span><span class="p">,</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">IPv6Address</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get ip_address object</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ip (str): String representation of IPv4 or IPv6 address.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Union[ipaddress.IPv4Address, ipaddress.IPv6Address]: ipaddress object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ip_obj</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ip_obj</span> <span class="o">=</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">ip_obj</span>
+
+<div class="viewcode-block" id="is_valid_ipaddress">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_valid_ipaddress">[docs]</a>
+<span class="k">def</span> <span class="nf">is_valid_ipaddress</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_get_ipaddress_obj</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="is_ipv4_address">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_ipv4_address">[docs]</a>
+<span class="k">def</span> <span class="nf">is_ipv4_address</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Valid IPv4 address in dotted-quad notation.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        ip_address: (str) in format 999.999.999.999</span>
+
+<span class="sd">    Example::</span>
+
+<span class="sd">        &gt;&gt;&gt; is_ipv4_address(&quot;1.2.3.4&quot;)</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; is_ipv4_address(&quot;127.0.0.1/8&quot;)</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; is_ipv4_address(&quot;1.2.3.4.5&quot;)</span>
+<span class="sd">        False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ip_obj</span> <span class="o">=</span> <span class="n">_get_ipaddress_obj</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ip_obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ip_obj</span><span class="p">,</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">IPv4Address</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_ipv6_address">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_ipv6_address">[docs]</a>
+<span class="k">def</span> <span class="nf">is_ipv6_address</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">ip_obj</span> <span class="o">=</span> <span class="n">_get_ipaddress_obj</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ip_obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ip_obj</span><span class="p">,</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">IPv6Address</span><span class="p">)</span></div>
+
+
+<span class="c1"># def is_ipv4_address(ip_address: str) -&gt; bool:</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Valid IPv4 address in dotted-quad notation.</span>
+    
+<span class="c1">#     Args:</span>
+<span class="c1">#         ip_address: (str) in format 999.999.999.999</span>
+
+<span class="c1">#     Example::</span>
+
+<span class="c1">#         &gt;&gt;&gt; is_ipv4_address(&quot;1.2.3.4&quot;)</span>
+<span class="c1">#         True</span>
+<span class="c1">#         &gt;&gt;&gt; is_ipv4_address(&quot;127.0.0.1/8&quot;)</span>
+<span class="c1">#         False</span>
+<span class="c1">#         &gt;&gt;&gt; is_ipv4_address(&quot;1.2.3.4.5&quot;)</span>
+<span class="c1">#         False</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     octets = ip_address.split(&quot;.&quot;)</span>
+
+<span class="c1">#     return len(octets) == 4 and \</span>
+<span class="c1">#         all(o.isdigit() and 0 &lt;= int(o) &lt; 256 for o in octets)</span>
+
+<div class="viewcode-block" id="is_port_open">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_port_open">[docs]</a>
+<span class="k">def</span> <span class="nf">is_port_open</span><span class="p">(</span><span class="n">host_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span><span class="nb">float</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if port is open on target host.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        host_name (str): Target host name</span>
+<span class="sd">        port (int): Port number to test</span>
+<span class="sd">        timeout (float, optional): Seconds to wait for connection. Defaults to 1.0.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if port is open else False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">port_is_open</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+    <span class="n">s</span><span class="o">.</span><span class="n">settimeout</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;is_port_open() - attempting to connect to </span><span class="si">{</span><span class="n">host_name</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">host_name</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">port</span><span class="p">)))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">SHUT_WR</span><span class="p">)</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;is_port_open() - connection successful.&#39;</span><span class="p">)</span>
+        <span class="n">port_is_open</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">except</span><span class="p">:</span>  <span class="c1"># noqa: E722</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;is_port_open() - unable to connect to </span><span class="si">{</span><span class="n">host_name</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">port_is_open</span></div>
+
+
+<div class="viewcode-block" id="is_valid_host">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_valid_host">[docs]</a>
+<span class="k">def</span> <span class="nf">is_valid_host</span><span class="p">(</span><span class="n">host_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if hos_tname is valid.  </span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        host (str): Host name or IP address.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if hostname is resolvable else False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ip_addr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">valid_host</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ip_addr</span> <span class="o">=</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">ve</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;host_name: </span><span class="si">{</span><span class="n">host_name</span><span class="si">}</span><span class="s1"> is NOT a valid IP address. [</span><span class="si">{</span><span class="n">ve</span><span class="si">}</span><span class="s1">]&#39;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ip_addr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;is_valid_host() - gethostbyaddr(</span><span class="si">{</span><span class="n">host_name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyaddr</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;is_valid_host() - gethostbyname(</span><span class="si">{</span><span class="n">host_name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+        <span class="n">valid_host</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">herror</span><span class="p">):</span>
+        <span class="n">valid_host</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">valid_host</span></div>
+
+    
+
+<span class="c1"># == get hostname, ip, MAC, vendor routins ======================================================</span>
+<div class="viewcode-block" id="get_hostname_from_ip">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_hostname_from_ip">[docs]</a>
+<span class="k">def</span> <span class="nf">get_hostname_from_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get hostname from IP address.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        ip: IP address to get hostname for.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Hostname if found else &#39;unknown&#39; if not found or error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyaddr</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+        <span class="n">hostname</span> <span class="o">=</span> <span class="n">host</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span><span class="p">:</span>  <span class="c1"># noqa: E722</span>
+        <span class="n">hostname</span> <span class="o">=</span> <span class="n">_UNKNOWN</span>
+    <span class="k">return</span> <span class="n">hostname</span></div>
+
+
+<div class="viewcode-block" id="get_ip_from_hostname">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_ip_from_hostname">[docs]</a>
+<span class="k">def</span> <span class="nf">get_ip_from_hostname</span><span class="p">(</span><span class="n">host_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get IP address from hostname.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        host_name: Name of target host.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        IP address if found or &#39;&#39; if not found or error.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span><span class="n">host_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">ip</span></div>
+
+
+<div class="viewcode-block" id="get_ip_from_mac">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_ip_from_mac">[docs]</a>
+<span class="k">def</span> <span class="nf">get_ip_from_mac</span><span class="p">(</span><span class="n">mac</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get IP address based on MAC (via ARP)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        mac (str): MAC address</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Unknown MAC address format</span>
+<span class="sd">        ValueError: Unable to determine IP from MAC address</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: IP address</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;get_ip_from_mac(&#39;</span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s2">&#39;)&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mac</span><span class="p">)</span> <span class="o">==</span> <span class="mi">17</span><span class="p">:</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">mac</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">mac</span> <span class="o">=</span> <span class="n">mac</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">sep</span><span class="p">,</span> <span class="n">_mac_separator</span><span class="p">())</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">mac</span><span class="p">)</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
+        <span class="c1"># sep = _mac_platform_separator()</span>
+        <span class="n">mac_byte_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">mac</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="p">]</span>
+        <span class="n">mac</span> <span class="o">=</span> <span class="n">OSHelper</span><span class="o">.</span><span class="n">mac_separator</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mac_byte_list</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;MAC invalid format: </span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># arp_cmd = cls._get_arp_cmd()</span>
+    <span class="n">process_rslt</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_arp_entries_command</span><span class="p">(),</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">rslt</span> <span class="o">=</span> <span class="n">process_rslt</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;MAC: </span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="se">\n</span><span class="s1">RESULT: </span><span class="si">{</span><span class="n">rslt</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">arp</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">rslt</span> <span class="k">if</span> <span class="n">mac</span> <span class="ow">in</span> <span class="n">token</span><span class="p">]</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  arp line: </span><span class="si">{</span><span class="n">arp</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">ip</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Windows&quot;</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arp</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arp</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="n">ip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  MAC </span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s1"> resolves to </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ip</span>
+    
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Can not determine IP for mac </span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_wan_ip">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_wan_ip">[docs]</a>
+<span class="k">def</span> <span class="nf">get_wan_ip</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">dt_tools.net.ip_info_helper</span> <span class="kn">import</span> <span class="n">IpHelper</span> <span class="k">as</span> <span class="n">ih</span>
+
+    <span class="n">ip_info</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">ih</span><span class="o">.</span><span class="n">get_wan_ip_info</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">ip_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ip&#39;</span><span class="p">,</span> <span class="n">_UNKNOWN</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_local_ip">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_local_ip">[docs]</a>
+<span class="k">def</span> <span class="nf">get_local_ip</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get local IP address</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Local machine IP address, or &#39;127.0.0.1&#39; if not found or error</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># doesn&#39;t even have to be reachable</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="s1">&#39;192.255.255.255&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">getsockname</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">except</span><span class="p">:</span>  <span class="c1"># noqa: E722</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">ip</span></div>
+
+ 
+<div class="viewcode-block" id="get_mac_address">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_mac_address">[docs]</a>
+<span class="k">def</span> <span class="nf">get_mac_address</span><span class="p">(</span><span class="n">hostname_or_ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get MAC address of target Hostname (or IP).</span>
+
+<span class="sd">    Process uses ARP to discover data.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        hostname_or_ip: target host</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        MAC address if found, else None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">local_ip</span> <span class="o">=</span> <span class="n">get_local_ip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">is_ipv4_address</span><span class="p">(</span><span class="n">hostname_or_ip</span><span class="p">):</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">hostname_or_ip</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ip</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostbyname</span><span class="p">(</span><span class="n">hostname_or_ip</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">gaierror</span> <span class="k">as</span> <span class="n">sge</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unable to resolve IP for </span><span class="si">{</span><span class="n">hostname_or_ip</span><span class="si">}</span><span class="s1"> [</span><span class="si">{</span><span class="n">sge</span><span class="si">}</span><span class="s1">]&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">mac</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">ip</span> <span class="o">==</span> <span class="n">local_ip</span><span class="p">:</span>
+        <span class="n">mac</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{:02x}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">uuid</span><span class="o">.</span><span class="n">getnode</span><span class="p">()</span> <span class="o">&gt;&gt;</span> <span class="n">ele</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">)</span> <span class="k">for</span> <span class="n">ele</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">8</span><span class="o">*</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">)][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">process_rslt</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">_arp_entries_command</span><span class="p">(),</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">rslt</span> <span class="o">=</span> <span class="n">process_rslt</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">mac</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">arp_list</span> <span class="o">=</span> <span class="n">rslt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">arp</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">arp_list</span> <span class="k">if</span> <span class="n">ip</span> <span class="ow">in</span> <span class="n">token</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">arp</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;no entry&#39;</span><span class="p">):</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;no entry in ARP for </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">OSHelper</span><span class="p">()</span><span class="o">.</span><span class="n">is_windows</span><span class="p">():</span>
+                    <span class="n">mac</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arp</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mac</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">arp</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">mac</span> <span class="o">=</span> <span class="n">mac</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>  <span class="c1"># no arp entry found</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Can not resolve MAC for </span><span class="si">{</span><span class="n">hostname_or_ip</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mac</span></div>
+
+
+<div class="viewcode-block" id="get_vendor_from_mac">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_vendor_from_mac">[docs]</a>
+<span class="k">def</span> <span class="nf">get_vendor_from_mac</span><span class="p">(</span><span class="n">mac</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the vendor name for specified MAC address</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        mac: Target MAC address</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Vendor name if found, else &#39;unknown&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">vendor</span> <span class="o">=</span> <span class="n">_UNKNOWN</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;https://api.maclookup.app/v2/macs/</span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">retry</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">RETRY_MAX</span> <span class="o">=</span> <span class="mi">15</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="n">retry</span> <span class="o">&lt;</span> <span class="n">RETRY_MAX</span> <span class="ow">and</span> <span class="n">vendor</span> <span class="o">==</span> <span class="n">_UNKNOWN</span><span class="p">:</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="n">vendor</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;company&#39;</span><span class="p">]</span>      <span class="c1"># api.maclookup</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vendor</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  ERROR: Vendor not found, </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">vendor</span> <span class="o">=</span> <span class="s2">&quot;Not Found&quot;</span>
+                <span class="k">if</span> <span class="n">retry</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  SUCCESS. Retry succeeded, </span><span class="si">{</span><span class="n">vendor</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>    
+            <span class="k">elif</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>
+                <span class="n">retry</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">sleep_secs</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">.25</span><span class="p">,</span><span class="mf">2.5</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  WARNING: Throttle [</span><span class="si">{</span><span class="n">retry</span><span class="si">}</span><span class="s1">]... </span><span class="si">{</span><span class="n">sleep_secs</span><span class="si">:</span><span class="s1">1.2</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">sleep</span><span class="p">(</span><span class="n">sleep_secs</span><span class="p">)</span> <span class="c1"># Throttle (limit = 2 requests/second)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  ERROR: MAC Lookup resp: </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">retry</span> <span class="o">=</span> <span class="n">RETRY_MAX</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  ERROR: MAC Lookup error </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">vendor</span> <span class="o">=</span> <span class="n">_UNKNOWN</span>
+        
+    <span class="k">if</span> <span class="n">vendor</span> <span class="o">==</span> <span class="n">_UNKNOWN</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  ERROR: Unable to resolve, </span><span class="si">{</span><span class="n">mac</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">vendor</span></div>
+
+
+
+<span class="c1"># == ARP Calls ===============================================================================================</span>
+<div class="viewcode-block" id="get_lan_clients_ARP_broadcast">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_lan_clients_ARP_broadcast">[docs]</a>
+<span class="k">def</span> <span class="nf">get_lan_clients_ARP_broadcast</span><span class="p">(</span><span class="n">include_hostname</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">include_mac_vendor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">LAN_Client</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieve a list of LAN_Clients from the local network.</span>
+
+<span class="sd">    The list of clients are retrieved via a Scapy ARP broadcast</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        including hostname and/or vendor will slow down process due to additional calls</span>
+
+<span class="sd">    Keyword Arguments:</span>
+<span class="sd">        include_hostname: Include hostname information (default: {False})</span>
+<span class="sd">        include_mac_vendor: Include MAC vendor name (default: {False})</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        PermissionError: Linux requires this call to be run as ROOT</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of :class:`~LAN_Client` entries </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">OSHelper</span><span class="o">.</span><span class="n">is_linux</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">OSHelper</span><span class="o">.</span><span class="n">is_linux_root</span><span class="p">():</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">&#39;You must be root on linux for ARP_Broadcast to work&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s1">&#39;Must be root&#39;</span><span class="p">)</span>
+
+    <span class="n">request</span> <span class="o">=</span> <span class="n">scapy</span><span class="o">.</span><span class="n">ARP</span><span class="p">()</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">pdst</span> <span class="o">=</span> <span class="n">_get_target_protocol_address_pdst</span><span class="p">()</span> <span class="c1"># &#39;192.168.1.1/24&#39;</span>
+    <span class="n">broadcast</span> <span class="o">=</span> <span class="n">scapy</span><span class="o">.</span><span class="n">Ether</span><span class="p">()</span> 
+    
+    <span class="n">broadcast</span><span class="o">.</span><span class="n">dst</span> <span class="o">=</span> <span class="s1">&#39;ff:ff:ff:ff:ff:ff&#39;</span>    
+    <span class="n">request_broadcast</span> <span class="o">=</span> <span class="n">broadcast</span> <span class="o">/</span> <span class="n">request</span> 
+    <span class="n">clients</span> <span class="o">=</span> <span class="n">scapy</span><span class="o">.</span><span class="n">srp</span><span class="p">(</span><span class="n">request_broadcast</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> 
+
+    <span class="n">lan_client_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">LAN_Client</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">clients</span><span class="p">:</span> 
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">element</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">psrc</span>
+        <span class="k">if</span> <span class="n">_trackable_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">):</span>
+            <span class="n">mac</span> <span class="o">=</span> <span class="n">element</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">hwsrc</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">LAN_Client</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">mac</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+            <span class="n">lan_client_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">include_hostname</span> <span class="ow">or</span> <span class="n">include_mac_vendor</span><span class="p">:</span>
+        <span class="n">lan_client_list</span> <span class="o">=</span> <span class="n">_get_hostname_and_or_vendor</span><span class="p">(</span><span class="n">lan_client_list</span><span class="p">,</span> <span class="n">include_hostname</span><span class="p">,</span> <span class="n">include_mac_vendor</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lan_client_list</span>        </div>
+
+
+<div class="viewcode-block" id="get_lan_clients_from_ARP_cache">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_lan_clients_from_ARP_cache">[docs]</a>
+<span class="k">def</span> <span class="nf">get_lan_clients_from_ARP_cache</span><span class="p">(</span><span class="n">include_hostname</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">include_mac_vendor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">LAN_Client</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;     </span>
+<span class="sd">    Retrieve a list of LAN_Clients from the local network.</span>
+
+<span class="sd">    The list of clients are retrieved via the ARP cache.</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        including hostname and/or vendor will slow down process due to additional calls</span>
+
+<span class="sd">    Keyword Arguments:</span>
+<span class="sd">        include_hostname: Include hostname information (default: {False})</span>
+<span class="sd">        include_mac_vendor: Include MAC vendor name (default: {False})</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of :class:`~LAN_Client` entries </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">arp_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;arp&quot;</span><span class="p">,</span> <span class="s2">&quot;-a&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">OSHelper</span><span class="p">()</span><span class="o">.</span><span class="n">is_windows</span><span class="p">()</span> <span class="k">else</span> <span class="p">[</span><span class="s2">&quot;arp&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">]</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ARP command: </span><span class="si">{</span><span class="n">arp_cmd</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">process_rslt</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">arp_cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">process_rslt</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="c1"># Remove lines that are not IPs</span>
+    <span class="n">tokens</span> <span class="o">=</span>  <span class="p">[</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">3</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Interface&#39;</span><span class="p">)]</span>
+
+    <span class="n">lan_client_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arp_entry</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">:</span>
+        <span class="c1"># If windows, response will be IP MAC TYPE, else IP TYPE MAC</span>
+        <span class="n">arp_field</span> <span class="o">=</span> <span class="n">arp_entry</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">arp_field</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">_trackable_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">):</span>
+            <span class="n">mac</span> <span class="o">=</span> <span class="n">arp_field</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">OSHelper</span><span class="p">()</span><span class="o">.</span><span class="n">is_windows</span><span class="p">()</span> <span class="k">else</span> <span class="n">arp_field</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">mac</span> <span class="o">=</span> <span class="n">mac</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="n">LAN_Client</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="n">mac</span><span class="p">)</span>
+            <span class="n">lan_client_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_hostname</span> <span class="ow">or</span> <span class="n">include_mac_vendor</span><span class="p">:</span>
+        <span class="n">lan_client_list</span> <span class="o">=</span> <span class="n">_get_hostname_and_or_vendor</span><span class="p">(</span><span class="n">lan_client_list</span><span class="p">,</span> <span class="n">include_hostname</span><span class="p">,</span> <span class="n">include_mac_vendor</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lan_client_list</span></div>
+
+
+<span class="c1"># ===========================================================================================================</span>
+<div class="viewcode-block" id="ping">
+<a class="viewcode-back" href="../../../dt_tools.net.net_helper.html#dt_tools.net.net_helper.ping">[docs]</a>
+<span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="n">host_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">wait_secs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ping target host (ip or name).</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        host_name: Target hostname (or ip address)</span>
+
+<span class="sd">    Keyword Arguments:</span>
+<span class="sd">        wait_secs: Number of seconds to wait for a reply (default: {1}).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if host responds, False if timeout or error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Token can be an IP or a hostname</span>
+    <span class="k">if</span> <span class="n">OSHelper</span><span class="p">()</span><span class="o">.</span><span class="n">is_windows</span><span class="p">():</span>
+        <span class="n">ping_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-w&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">wait_secs</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">),</span> <span class="n">host_name</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ping_cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ping&#39;</span><span class="p">,</span> <span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;-W&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">wait_secs</span><span class="p">),</span> <span class="n">host_name</span><span class="p">]</span>
+
+    <span class="n">online_state</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">ping_result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">ping_cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ping_result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="s1">&#39;unreachable&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ping_result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">):</span>
+        <span class="n">online_state</span> <span class="o">=</span> <span class="kc">True</span>
+            
+    <span class="k">return</span> <span class="n">online_state</span></div>
+
+
+<span class="c1"># == Private Methods ==========================================================================</span>
+<span class="k">def</span> <span class="nf">_trackable_ip</span><span class="p">(</span><span class="n">ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">trackable</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">ip</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;224.&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">ip</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;239.255.250.250&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">ip</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;239.255.255.250&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+        <span class="n">ip</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.255&#39;</span><span class="p">):</span>
+        <span class="n">trackable</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="k">return</span> <span class="n">trackable</span>
+
+<span class="k">def</span> <span class="nf">_get_hostname_and_or_vendor</span><span class="p">(</span><span class="n">client_list</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">include_hostname</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">include_mac_vendor</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">LAN_Client</span><span class="p">]:</span>
+
+    <span class="n">updated_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">LAN_Client</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="kn">from</span> <span class="nn">dt_tools.net.ip_info_helper</span> <span class="kn">import</span> <span class="n">IpHelper</span>
+    <span class="n">ip_info</span> <span class="o">=</span> <span class="n">IpHelper</span><span class="p">()</span>
+    <span class="n">arp_entry</span><span class="p">:</span> <span class="n">LAN_Client</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">arp_entry</span> <span class="ow">in</span> <span class="n">client_list</span><span class="p">:</span>
+        <span class="n">ip_data</span> <span class="o">=</span> <span class="n">ip_info</span><span class="o">.</span><span class="n">get_ip_info</span><span class="p">(</span><span class="n">arp_entry</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_hostname</span><span class="p">:</span>
+            <span class="n">arp_entry</span><span class="o">.</span><span class="n">hostname</span> <span class="o">=</span> <span class="n">ip_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hostname&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_mac_vendor</span><span class="p">:</span>
+            <span class="n">arp_entry</span><span class="o">.</span><span class="n">vendor</span> <span class="o">=</span> <span class="n">ip_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;vendor&#39;</span><span class="p">)</span>
+        <span class="n">updated_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arp_entry</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">updated_list</span>
+
+<span class="k">def</span> <span class="nf">_get_target_protocol_address_pdst</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    _summary_</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: _description_</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ip</span> <span class="o">=</span> <span class="n">get_local_ip</span><span class="p">()</span>
+    <span class="n">octet</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">octet</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;1&#39;</span>
+    <span class="n">network</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">octet</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/24&quot;</span>
+
+    <span class="k">return</span> <span class="n">network</span>
+
+<span class="k">def</span> <span class="nf">_ipv4_mask_len</span><span class="p">(</span><span class="n">dotquad</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds the number of bits set in the netmask.</span>
+
+<span class="sd">    &gt;&gt;&gt; ipv4_mask_len(&quot;255.255.255.0&quot;)</span>
+<span class="sd">    24</span>
+<span class="sd">    &gt;&gt;&gt; ipv4_mask_len(&quot;0.0.0.0&quot;)</span>
+<span class="sd">    0</span>
+<span class="sd">    &gt;&gt;&gt; ipv4_mask_len(&quot;255.255.255.255&quot;)</span>
+<span class="sd">    32</span>
+<span class="sd">    &gt;&gt;&gt; ipv4_mask_len(&quot;127.0.0.0&quot;)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: Invalid netmask: 127.0.0.0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_ipv4_address</span><span class="p">(</span><span class="n">dotquad</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid netmask: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dotquad</span><span class="p">))</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">octet</span><span class="p">)</span> <span class="k">for</span> <span class="n">octet</span> <span class="ow">in</span> <span class="n">dotquad</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">))</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">a</span> <span class="o">&lt;&lt;</span> <span class="mi">24</span> <span class="o">|</span> <span class="n">b</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span> <span class="o">|</span> <span class="n">c</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span> <span class="o">|</span> <span class="n">d</span>
+
+    <span class="k">if</span> <span class="n">mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="c1"># Count the number of consecutive 0 bits at the right.</span>
+    <span class="c1"># https://wiki.python.org/moin/BitManipulation#lowestSet.28.29</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="o">-</span><span class="n">mask</span>
+    <span class="n">right0bits</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">while</span> <span class="n">m</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">&gt;&gt;=</span> <span class="mi">1</span>
+        <span class="n">right0bits</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># Verify that all the bits to the left are 1&#39;s</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="o">|</span> <span class="p">((</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">right0bits</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mh">0xffffffff</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid netmask: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dotquad</span><span class="p">))</span>
+    <span class="k">return</span> <span class="mi">32</span> <span class="o">-</span> <span class="n">right0bits</span>
+
+<span class="k">def</span> <span class="nf">_arp_entries_command</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="s2">&quot;arp -a&quot;</span> <span class="k">if</span> <span class="n">OSHelper</span><span class="p">()</span><span class="o">.</span><span class="n">is_windows</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;arp -n&quot;</span>
+
+<span class="k">def</span> <span class="nf">_mac_separator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="s1">&#39;-&#39;</span> <span class="k">if</span> <span class="n">OSHelper</span><span class="o">.</span><span class="n">is_windows</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;:&quot;</span>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">dt_tools.cli.dt_net_demo</span> <span class="k">as</span> <span class="nn">cli</span>
+    <span class="n">cli</span><span class="o">.</span><span class="n">demo</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, JavaWiz1@hotmail.com.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

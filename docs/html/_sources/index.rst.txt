@@ -1,0 +1,30 @@
+.. dt-net documentation master file, created by
+   sphinx-quickstart on Sat Aug 10 09:26:16 2024.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+dt-net documentation
+====================
+
+**dt_net** package are a set of tools to retrieve network type information.
+
+Includes:
+
+.. list-table:: 
+   :widths: 25 75
+   :header-rows: 1
+
+   * - Package
+     - Description
+   * - ip_info_helper
+     - IP Address information.  Uses ipinfo.io API to retrive IP related information.
+   * - net_helper
+     - Network utilities helper class.  Information related to retrieving IP, MAC, hostnames, ...
+   * - wol
+     -  Send WOL packets to target hosts.
+
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents:
+
+   dt_tools

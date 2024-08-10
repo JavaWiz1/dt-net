@@ -1,0 +1,13 @@
+dt\_tools namespace
+===================
+
+.. py:module:: dt_tools
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   dt_tools.cli
+   dt_tools.net

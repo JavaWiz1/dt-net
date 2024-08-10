@@ -1,0 +1,7 @@
+dt\_tools.net.wol module
+========================
+
+.. automodule:: dt_tools.net.wol
+   :members:
+   :undoc-members:
+   :show-inheritance:
