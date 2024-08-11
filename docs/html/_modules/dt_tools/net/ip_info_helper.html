@@ -88,9 +88,6 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c1"># TODO: I think all IpInfo can be Class level (i.e. @classmethod)</span>
-<span class="c1">#       How do we abstract out token from being hard-coded?</span>
-
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
@@ -152,48 +149,56 @@
 
 <span class="sd">        For LAN IPs:</span>
 <span class="sd">            ip         : xxx.xxx.xxx.xxx</span>
+<span class="sd">            hostname   : hostname.domain[or workgroup]</span>
 <span class="sd">            bogon      : True</span>
 <span class="sd">            mac        : XX:XX:XX:XX:XX:XX</span>
 <span class="sd">            vendor     : Raspberry Pi Trading Ltd</span>
-<span class="sd">            hostname   : hostname.domain[or workgroup]</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Class variables</span>
     <span class="n">_cache_mtime</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
     <span class="n">_cache</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_mac_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_valid_token</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_token_initialized</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">purge_stale_entries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">no_token</span><span class="p">:</span><span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-        <span class="c1"># LOGGER.level(&#39;ERROR&#39;)</span>
-        <span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_valid_token</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">no_token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_validate_token</span><span class="p">():</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;A token is required for IpHelper to function.&#39;</span><span class="p">)</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Tokens are free, to get your token, go to &quot;https://ipinfo.io/missingauth&#39;</span><span class="p">)</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;When you have a token run xxxx to set the token for IpHelper.&#39;</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Invalid token for ipinfo.io.  See log and https://ipinfo.io/missingauth&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">(</span><span class="n">purge_stale_entries</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">purge_stale_entries</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">no_token</span><span class="p">:</span><span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">no_token</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_validate_token</span><span class="p">()</span>        
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">(</span><span class="n">purge_stale_entries</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_validate_token</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Token validation in progress...&#39;</span><span class="p">)</span>
         <span class="n">rc</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="k">if</span> <span class="n">IP_INFO_TOKEN_LOCATION</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_token_initialized</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">IP_INFO_TOKEN_LOCATION</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Cached token NOT found.&#39;</span><span class="p">)</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_raise_token_error</span><span class="p">()</span>            
             <span class="n">token_dict</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">IP_INFO_TOKEN_LOCATION</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
             <span class="n">ih</span><span class="o">.</span><span class="n">TOKEN</span> <span class="o">=</span> <span class="n">token_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;token&#39;</span><span class="p">,</span> <span class="s1">&#39;NOT VALID&#39;</span><span class="p">)</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_token_initialized</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">ip_info</span><span class="p">,</span> <span class="n">rc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_wan_ip_info</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">rc</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Token check returns: </span><span class="si">{</span><span class="p">(</span><span class="n">ip_info</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_raise_token_error</span><span class="p">()</span>
 
-        <span class="k">return</span> <span class="n">rc</span> <span class="o">==</span> <span class="mi">200</span>    
-        
-    <span class="k">def</span> <span class="nf">_load_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">purge_stale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_raise_token_error</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;A token is required for IpHelper to function.&#39;</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Tokens are free, to get your token, go to &quot;https://ipinfo.io/missingauth&#39;</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;When you have a token run xxxx to set the token for IpHelper.&#39;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Invalid token for ipinfo.io.  See log and https://ipinfo.io/missingauth&#39;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>        
+    <span class="k">def</span> <span class="nf">_load_cache</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">purge_stale</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
         <span class="n">_CACHE_SEMAPHORE</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_refresh_required</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_refresh_required</span><span class="p">:</span>
             <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">buffer</span> <span class="o">=</span> <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">buffer</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
@@ -201,7 +206,7 @@
                 <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="p">)</span><span class="si">}</span><span class="s1"> IpHelper cache entries loaded.&#39;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">purge_stale</span><span class="p">:</span>
-                    <span class="n">dropped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_drop_stale_entries</span><span class="p">()</span>
+                    <span class="n">dropped</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_drop_stale_entries</span><span class="p">()</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dropped</span><span class="si">}</span><span class="s1"> IpHelper cache stale entries dropped.&#39;</span><span class="p">)</span>
                 <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache_mtime</span> <span class="o">=</span> <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
@@ -219,7 +224,7 @@
         <span class="n">_CACHE_SEMAPHORE</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_refresh_required</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_refresh_required</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">refresh</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
             <span class="n">last_update</span> <span class="o">=</span> <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
@@ -248,7 +253,8 @@
             
         <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">_age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_age</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">cached_time</span> <span class="o">=</span>  <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_cached&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">age</span> <span class="o">=</span> <span class="s1">&#39;N/A&#39;</span>
         <span class="k">if</span> <span class="n">cached_time</span><span class="p">:</span>
@@ -257,7 +263,8 @@
             <span class="n">age</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">td</span><span class="o">.</span><span class="n">days</span><span class="si">}</span><span class="s1"> days, </span><span class="si">{</span><span class="n">td</span><span class="o">.</span><span class="n">seconds</span><span class="o">//</span><span class="mi">3600</span><span class="si">}</span><span class="s1"> hours, </span><span class="si">{</span><span class="p">(</span><span class="n">td</span><span class="o">.</span><span class="n">seconds</span><span class="o">//</span><span class="mi">60</span><span class="p">)</span><span class="o">%</span><span class="mi">60</span><span class="si">}</span><span class="s1"> minutes&#39;</span>
         <span class="k">return</span> <span class="n">age</span>
 
-    <span class="k">def</span> <span class="nf">_expires</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_expires</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">cached_time</span> <span class="o">=</span>  <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_cached&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">ttl</span> <span class="o">=</span> <span class="s1">&#39;N/A&#39;</span>
         <span class="k">if</span> <span class="n">cached_time</span><span class="p">:</span>
@@ -270,6 +277,7 @@
                 <span class="n">expires</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ttl</span><span class="o">.</span><span class="n">days</span><span class="si">}</span><span class="s1"> days, </span><span class="si">{</span><span class="n">ttl</span><span class="o">.</span><span class="n">seconds</span><span class="o">//</span><span class="mi">3600</span><span class="si">}</span><span class="s1"> hours, </span><span class="si">{</span><span class="p">(</span><span class="n">ttl</span><span class="o">.</span><span class="n">seconds</span><span class="o">//</span><span class="mi">60</span><span class="p">)</span><span class="o">%</span><span class="mi">60</span><span class="si">}</span><span class="s1"> minutes&#39;</span>
         <span class="k">return</span> <span class="n">expires</span>
 
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">_drop_stale_entries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="n">dropped</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">del_list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -284,7 +292,7 @@
         <span class="k">return</span> <span class="n">dropped</span> 
     
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">cache_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">cache_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The IP Info cache dictionary.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -292,7 +300,8 @@
             
 <div class="viewcode-block" id="IpHelper.clear_cache">
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.clear_cache">[docs]</a>
-    <span class="k">def</span> <span class="nf">clear_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>            
+    <span class="k">def</span> <span class="nf">clear_cache</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Clear the IP Info cache.</span>
 
@@ -300,7 +309,7 @@
 <span class="sd">            ip_address -- IP address to be cleared (default: {None})</span>
 <span class="sd">              If None, all entries will be removed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span>
         <span class="n">initial_cache_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="p">)</span>
         <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">IP_INFO_CACHE_LOCATION</span><span class="o">.</span><span class="n">touch</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -324,10 +333,10 @@
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;IpHelper Cache cleared.  </span><span class="si">{</span><span class="n">removed_cnt</span><span class="si">}</span><span class="s1"> entries removed. </span><span class="si">{</span><span class="n">cur_len</span><span class="si">}</span><span class="s1"> entries remaining.&#39;</span><span class="p">)</span></div>
 
 
-
 <div class="viewcode-block" id="IpHelper.is_cached">
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.is_cached">[docs]</a>
-    <span class="k">def</span> <span class="nf">is_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">is_cached</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check if IP address is in cache.</span>
 
@@ -337,7 +346,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            True if found else False.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span>  <span class="c1"># Load cache if needed</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span>  <span class="c1"># Load cache if needed</span>
         <span class="n">ip_info</span> <span class="o">=</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ip_address</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ip_info</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ip_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_cached&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
@@ -347,7 +356,8 @@
     
 <div class="viewcode-block" id="IpHelper.get_ip_info">
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.get_ip_info">[docs]</a>
-    <span class="k">def</span> <span class="nf">get_ip_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_ip_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ip_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
                     <span class="n">include_unknown_fields</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
                     <span class="n">include_private_fields</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                     <span class="n">bypass_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -364,13 +374,14 @@
 <span class="sd">            JSON dictionary of all data related to target IP address.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         
+        <span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">()</span>
         <span class="n">_CACHE_SEMAPHORE</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> 
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> 
         <span class="n">ip_info</span> <span class="o">=</span> <span class="n">_UNKNOWN</span>
         <span class="k">if</span> <span class="n">nh</span><span class="o">.</span><span class="n">is_ipv4_address</span><span class="p">(</span><span class="n">ip_address</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">bypass_cache</span><span class="p">:</span>
                 <span class="n">ip_info</span> <span class="o">=</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ip_address</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">ip_info</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stale</span><span class="p">(</span><span class="n">ip_address</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">ip_info</span> <span class="ow">and</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_stale</span><span class="p">(</span><span class="n">ip_address</span><span class="p">):</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ip_address</span><span class="si">}</span><span class="s1"> stale, will re-fresh&#39;</span><span class="p">)</span>
                     <span class="n">ip_info</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -385,7 +396,7 @@
                     <span class="n">ip_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;Exception: </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}</span>
 
                 <span class="k">if</span> <span class="s1">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">ip_info</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ERROR on call </span><span class="si">{</span><span class="n">ip_info</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ERROR - url: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">  resp: </span><span class="si">{</span><span class="n">ip_info</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">ip</span> <span class="o">=</span> <span class="n">ip_info</span><span class="p">[</span><span class="s1">&#39;ip&#39;</span><span class="p">]</span>
                     <span class="n">ip_info</span><span class="p">[</span><span class="s1">&#39;mac&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNKNOWN</span>
@@ -430,6 +441,8 @@
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.get_wan_ip_info">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">get_wan_ip_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">()</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_validate_token</span><span class="p">()</span>
         <span class="n">ip_info</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">BASE_URL</span><span class="si">}</span><span class="s1">?token=</span><span class="si">{</span><span class="n">TOKEN</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="n">resp</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
@@ -442,14 +455,15 @@
             <span class="n">ip_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;Exception: </span><span class="si">{</span><span class="nb">repr</span><span class="p">(</span><span class="n">ex</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">}</span>
 
         <span class="k">if</span> <span class="s1">&#39;error&#39;</span> <span class="ow">in</span> <span class="n">ip_info</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ERROR on call </span><span class="si">{</span><span class="n">ip_info</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ERROR- url: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s1">  resp: </span><span class="si">{</span><span class="n">ip_info</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">ip_info</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span></div>
 
         
 <div class="viewcode-block" id="IpHelper.find_in_cache">
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.find_in_cache">[docs]</a>
-    <span class="k">def</span> <span class="nf">find_in_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">search_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="nd">@classmethod</span>        
+    <span class="k">def</span> <span class="nf">find_in_cache</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">search_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        TODO: NEEDS Work</span>
 
@@ -460,13 +474,13 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            _description_</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> <span class="c1"># update memory with any changes</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> <span class="c1"># update memory with any changes</span>
         <span class="n">found_keys</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">field_val</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
                 <span class="k">if</span> <span class="n">search_token</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">field_val</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
                     <span class="n">found_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;- found </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">field_val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;- found </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> in </span><span class="si">{</span><span class="n">field_val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
                     <span class="k">continue</span>
 
         <span class="n">found</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">found_keys</span><span class="p">)</span>
@@ -474,7 +488,7 @@
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;- Search key [</span><span class="si">{</span><span class="n">search_token</span><span class="si">}</span><span class="s1">] NOT found&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">found_keys</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">list_cache</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">list_cache</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;- </span><span class="si">{</span><span class="n">found</span><span class="si">}</span><span class="s1"> entries found.&#39;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">found_keys</span></div>
@@ -482,7 +496,8 @@
         
 <div class="viewcode-block" id="IpHelper.list_cache">
 <a class="viewcode-back" href="../../../dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.list_cache">[docs]</a>
-    <span class="k">def</span> <span class="nf">list_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">list_cache</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ip</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Print formatted contents of cache to console.</span>
 
@@ -490,28 +505,29 @@
 <span class="sd">            ip: Target IP Address (default: {None}).</span>
 <span class="sd">              If None, all entries will be output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> <span class="c1"># Update memory with any changes</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_load_cache</span><span class="p">()</span> <span class="c1"># Update memory with any changes</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Sorry, cache is empty&#39;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">ip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">entry</span> <span class="o">=</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ip</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">entry</span><span class="p">:</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-- </span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s1"> ---------------------------------------&#39;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_print_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_print_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s1"> does NOT exist in cache.&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">success</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;-- </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> ---------------------------------------&#39;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_print_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_print_entry</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
                 <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;IP Info cache contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">IpHelper</span><span class="o">.</span><span class="n">_cache</span><span class="p">)</span><span class="si">}</span><span class="s1"> entries&#39;</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_print_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">show_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_cache_age&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_age</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
-        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_expires&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expires</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
-        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_stale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stale</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;ip&#39;</span><span class="p">])</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_print_entry</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">entry</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">show_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_cache_age&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_age</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_expires&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_expires</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+        <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;_stale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_stale</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;ip&#39;</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">show_all</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">):</span>
                 <span class="k">pass</span>

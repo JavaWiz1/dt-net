@@ -1,7 +1,0 @@
-dt\_tools.cli.dt\_net\_demo module
-==================================
-
-.. automodule:: dt_tools.cli.dt_net_demo
-   :members:
-   :undoc-members:
-   :show-inheritance:

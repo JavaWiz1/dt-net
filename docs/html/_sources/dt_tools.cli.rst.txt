@@ -9,5 +9,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   dt_tools.cli.dt_net_demo
+   dt_tools.cli.dt_ip_info_helper_demo
+   dt_tools.cli.dt_net_demos
+   dt_tools.cli.dt_net_helper_demo
    dt_tools.cli.set_iphelper_token
