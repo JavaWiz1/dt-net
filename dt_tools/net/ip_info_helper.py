@@ -15,9 +15,6 @@ To minimize API calls (and response time):
 
 """
 
-# TODO: I think all IpInfo can be Class level (i.e. @classmethod)
-#       How do we abstract out token from being hard-coded?
-
 import json
 import pathlib
 from datetime import datetime, timedelta
@@ -77,48 +74,56 @@ class IpHelper():
 
         For LAN IPs:
             ip         : xxx.xxx.xxx.xxx
+            hostname   : hostname.domain[or workgroup]
             bogon      : True
             mac        : XX:XX:XX:XX:XX:XX
             vendor     : Raspberry Pi Trading Ltd
-            hostname   : hostname.domain[or workgroup]
 
     """
     # Class variables
     _cache_mtime: float = 0.0
     _cache: Dict[str, dict] = None
     _mac_info: Dict[str, dict] = None
-    _valid_token: bool = False
+    _token_initialized: bool = False
 
-    def __init__(self, purge_stale_entries: bool = True, no_token:bool = False):
-        # LOGGER.level('ERROR')
-        urllib3.disable_warnings()
-        if not IpHelper._valid_token:
-            if not no_token and not IpHelper._validate_token():
-                LOGGER.warning('A token is required for IpHelper to function.')
-                LOGGER.warning('Tokens are free, to get your token, go to "https://ipinfo.io/missingauth')
-                LOGGER.warning('When you have a token run xxxx to set the token for IpHelper.')
-                raise RuntimeError('Invalid token for ipinfo.io.  See log and https://ipinfo.io/missingauth')
-        self._load_cache(purge_stale_entries)
+    @classmethod
+    def __init__(cls, purge_stale_entries: bool = True, no_token:bool = False):
+        if not no_token:
+            cls._validate_token()        
+        cls._load_cache(purge_stale_entries)
 
     @classmethod
     def _validate_token(cls) -> bool:
         LOGGER.debug('Token validation in progress...')
         rc = -1
-        if IP_INFO_TOKEN_LOCATION.exists():
+        if not cls._token_initialized:
+            if not IP_INFO_TOKEN_LOCATION.exists():
+                LOGGER.error('Cached token NOT found.')
+                cls._raise_token_error()            
             token_dict: dict = json.loads(IP_INFO_TOKEN_LOCATION.read_text())
             ih.TOKEN = token_dict.get('token', 'NOT VALID')
+            cls._token_initialized = True
             ip_info, rc = cls.get_wan_ip_info()
             if rc != 200:
                 LOGGER.error(f'Token check returns: {(ip_info)}')
+                cls._raise_token_error()
 
-        return rc == 200    
-        
-    def _load_cache(self, purge_stale: bool = False):
+        return True
+
+    @classmethod
+    def _raise_token_error(cls):
+        LOGGER.warning('A token is required for IpHelper to function.')
+        LOGGER.warning('Tokens are free, to get your token, go to "https://ipinfo.io/missingauth')
+        LOGGER.warning('When you have a token run xxxx to set the token for IpHelper.')
+        raise RuntimeError('Invalid token for ipinfo.io.  See log and https://ipinfo.io/missingauth')
+
+    @classmethod        
+    def _load_cache(cls, purge_stale: bool = False):
         _CACHE_SEMAPHORE.acquire(timeout=5.0)
-        if self._refresh_required:
+        if cls._refresh_required:
             IpHelper._cache = {}
             if not IP_INFO_CACHE_LOCATION.exists():
-                self.clear_cache()
+                cls.clear_cache()
             try:
                 buffer = IP_INFO_CACHE_LOCATION.read_text()
                 if buffer == "":
@@ -126,7 +131,7 @@ class IpHelper():
                 IpHelper._cache = json.loads(buffer)
                 LOGGER.debug(f'{len(IpHelper._cache)} IpHelper cache entries loaded.')
                 if purge_stale:
-                    dropped = self._drop_stale_entries()
+                    dropped = cls._drop_stale_entries()
                     LOGGER.debug(f'{dropped} IpHelper cache stale entries dropped.')
                 IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
             except Exception as ex:
@@ -144,7 +149,7 @@ class IpHelper():
         _CACHE_SEMAPHORE.release()
 
     @property
-    def _refresh_required(self) -> bool:
+    def _refresh_required(cls) -> bool:
         refresh = False
         if IP_INFO_CACHE_LOCATION.exists():
             last_update = IP_INFO_CACHE_LOCATION.stat().st_mtime
@@ -173,7 +178,8 @@ class IpHelper():
             
         return False
 
-    def _age(self, entry: dict) -> str:
+    @classmethod
+    def _age(cls, entry: dict) -> str:
         cached_time =  entry.get('_cached', None)
         age = 'N/A'
         if cached_time:
@@ -182,7 +188,8 @@ class IpHelper():
             age = f'{td.days} days, {td.seconds//3600} hours, {(td.seconds//60)%60} minutes'
         return age
 
-    def _expires(self, entry: dict) -> str:
+    @classmethod
+    def _expires(cls, entry: dict) -> str:
         cached_time =  entry.get('_cached', None)
         ttl = 'N/A'
         if cached_time:
@@ -195,6 +202,7 @@ class IpHelper():
                 expires = f'{ttl.days} days, {ttl.seconds//3600} hours, {(ttl.seconds//60)%60} minutes'
         return expires
 
+    @classmethod
     def _drop_stale_entries(self) -> int:
         dropped = 0
         del_list = []
@@ -209,13 +217,14 @@ class IpHelper():
         return dropped 
     
     @property
-    def cache_dict(self) -> dict:
+    def cache_dict(cls) -> dict:
         """
         The IP Info cache dictionary.
         """
         return IpHelper._cache
             
-    def clear_cache(self, ip_address: str = None):
+    @classmethod            
+    def clear_cache(cls, ip_address: str = None):
         """
         Clear the IP Info cache.
 
@@ -223,7 +232,7 @@ class IpHelper():
             ip_address -- IP address to be cleared (default: {None})
               If None, all entries will be removed.
         """
-        self._load_cache()
+        cls._load_cache()
         initial_cache_len = len(IpHelper._cache)
         IP_INFO_CACHE_LOCATION.parent.mkdir(exist_ok=True)
         IP_INFO_CACHE_LOCATION.touch(exist_ok=True)
@@ -246,8 +255,8 @@ class IpHelper():
         removed_cnt = initial_cache_len - cur_len
         LOGGER.debug(f'IpHelper Cache cleared.  {removed_cnt} entries removed. {cur_len} entries remaining.')
 
-
-    def is_cached(self, ip_address: str) -> bool:
+    @classmethod
+    def is_cached(cls, ip_address: str) -> bool:
         """
         Check if IP address is in cache.
 
@@ -257,14 +266,15 @@ class IpHelper():
         Returns:
             True if found else False.
         """
-        self._load_cache()  # Load cache if needed
+        cls._load_cache()  # Load cache if needed
         ip_info = IpHelper._cache.get(ip_address, None)
         if ip_info:
             return ip_info.get('_cached', False)
     
         return False
     
-    def get_ip_info(self, ip_address: str, 
+    @classmethod
+    def get_ip_info(cls, ip_address: str, 
                     include_unknown_fields: bool = False, 
                     include_private_fields: bool = False,
                     bypass_cache: bool = False) -> dict:
@@ -281,13 +291,14 @@ class IpHelper():
             JSON dictionary of all data related to target IP address.
         """
         
+        urllib3.disable_warnings()
         _CACHE_SEMAPHORE.acquire(timeout=15.0)
-        self._load_cache() 
+        cls._load_cache() 
         ip_info = _UNKNOWN
         if nh.is_ipv4_address(ip_address):
             if not bypass_cache:
                 ip_info = IpHelper._cache.get(ip_address, None)
-                if ip_info and self._stale(ip_address):
+                if ip_info and cls._stale(ip_address):
                     LOGGER.debug(f'{ip_address} stale, will re-fresh')
                     ip_info = None
 
@@ -302,7 +313,7 @@ class IpHelper():
                     ip_info = {'error': f'Exception: {repr(ex)}'}
 
                 if 'error' in ip_info:
-                    LOGGER.warning(f'ERROR on call {ip_info}')
+                    LOGGER.warning(f'ERROR - url: {url}  resp: {ip_info}')
                 else:
                     ip = ip_info['ip']
                     ip_info['mac'] = _UNKNOWN
@@ -344,6 +355,8 @@ class IpHelper():
 
     @classmethod
     def get_wan_ip_info(cls) -> Tuple[dict, int]:
+        urllib3.disable_warnings()
+        cls._validate_token()
         ip_info = None
         url=f'{BASE_URL}?token={TOKEN}'
         resp = ""
@@ -356,11 +369,12 @@ class IpHelper():
             ip_info = {'error': f'Exception: {repr(ex)}'}
 
         if 'error' in ip_info:
-            LOGGER.warning(f'ERROR on call {ip_info}')
+            LOGGER.warning(f'ERROR- url: {url}  resp: {ip_info}')
 
         return (ip_info, rc)
         
-    def find_in_cache(self, search_token: str) -> List[str]:
+    @classmethod        
+    def find_in_cache(cls, search_token: str) -> List[str]:
         """
         TODO: NEEDS Work
 
@@ -371,13 +385,13 @@ class IpHelper():
         Returns:
             _description_
         """
-        self._load_cache() # update memory with any changes
+        cls._load_cache() # update memory with any changes
         found_keys = []
         for key, entry in IpHelper._cache.items():
             for field_val in entry.values():
                 if search_token.lower() in str(field_val).lower():
                     found_keys.append(key)
-                    print(f'- found {key} in {field_val}')
+                    LOGGER.debug(f'- found {key} in {field_val}')
                     continue
 
         found = len(found_keys)
@@ -385,12 +399,13 @@ class IpHelper():
             LOGGER.warning(f'- Search key [{search_token}] NOT found')
         else:
             for key in found_keys:
-                self.list_cache(key)
+                cls.list_cache(key)
             LOGGER.success(f'- {found} entries found.')
 
         return found_keys
         
-    def list_cache(self, ip: str = None):
+    @classmethod
+    def list_cache(cls, ip: str = None):
         """
         Print formatted contents of cache to console.
 
@@ -398,27 +413,28 @@ class IpHelper():
             ip: Target IP Address (default: {None}).
               If None, all entries will be output.
         """
-        self._load_cache() # Update memory with any changes
+        cls._load_cache() # Update memory with any changes
         if len(IpHelper._cache) == 0:
             LOGGER.warning('Sorry, cache is empty')
         elif ip is not None:
             entry = IpHelper._cache.get(ip, None)
             if entry:
                 LOGGER.success(f'-- {ip} ---------------------------------------')
-                self._print_entry(entry)
+                cls._print_entry(entry)
             else:
                 LOGGER.warning(f'{ip} does NOT exist in cache.')
         else:
             for key, entry in IpHelper._cache.items():
                 LOGGER.success(f'-- {key} ---------------------------------------')
-                self._print_entry(entry)
+                cls._print_entry(entry)
                 LOGGER.info('')
             LOGGER.info(f'IP Info cache contains {len(IpHelper._cache)} entries')
 
-    def _print_entry(self, entry: dict, show_all: bool = True):
-        entry['_cache_age'] = self._age(entry)
-        entry['_expires'] = self._expires(entry)
-        entry['_stale'] = self._stale(entry['ip'])
+    @classmethod
+    def _print_entry(cls, entry: dict, show_all: bool = True):
+        entry['_cache_age'] = cls._age(entry)
+        entry['_expires'] = cls._expires(entry)
+        entry['_stale'] = cls._stale(entry['ip'])
         for k,v in entry.items():
             if not show_all and k.startswith('_'):
                 pass

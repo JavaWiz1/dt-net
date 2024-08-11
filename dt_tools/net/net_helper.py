@@ -261,9 +261,9 @@ def get_ip_from_mac(mac: str) -> str:
     raise ValueError(f'Can not determine IP for mac {mac}')
 
 def get_wan_ip() -> str:
-    from dt_tools.net.ip_info_helper import IpHelper as ih
+    from dt_tools.net.ip_info_helper import IpHelper
 
-    ip_info, _ = ih.get_wan_ip_info()
+    ip_info, _ = IpHelper.get_wan_ip_info()
     return ip_info.get('ip', _UNKNOWN)
 
 def get_local_ip() -> str:
@@ -571,5 +571,7 @@ def _mac_separator() -> str:
 
 
 if __name__ == "__main__":
-    import dt_tools.cli.dt_net_demo as cli
+    import dt_tools.cli.dt_net_demos as cli
+    import dt_tools.logger.logging_helper as lh
+    lh.configure_logger()
     cli.demo()
