@@ -18,7 +18,7 @@ import platform
 import random
 import socket
 import subprocess
-import uuid
+# import uuid
 from dataclasses import dataclass
 from time import sleep
 from typing import List, Union
@@ -30,6 +30,71 @@ from loguru import logger as LOGGER
 from dt_tools.os.os_helper import OSHelper
 
 _UNKNOWN = 'unknown'
+
+COMMON_PORTS = {
+    "Echo service": 7,
+    "FTP-data": 20,
+    "FTP": 21,
+    "SSH": 22,
+    "Telnet": 23,
+    "SMTP": 25,
+    "DNS": 53,
+    "TFTP": 69,
+    "HTTP": 80,
+    "Kerberos": 88,
+    "Iso-tsap": 102,
+    "POP3": 110,
+    "MS EPMAP": 135,
+    "NetBIOS-ns": 137,
+    "NetBIOS-ssn": 139,
+    "IMAP4": 143,
+    "HP Openview (alarm)": 381,
+    "HP Openview (data)": 383,
+    "HTTPS": 443,
+    "Kerberos (pwd)": 464,
+    "SMTP TLS/SSL": 465,
+    "SMTP (submission)": 587,
+    "MS DCOM": 593,
+    "LDAP TLS/SSL": 636,
+    "MS Exchange": 691,
+    "VMWare": 902,
+    "FTP SSL (data)": 989,
+    "FTP SSL (control)": 990,
+    "IMAP4 SSL": 993,
+    "POP3 SSL": 995,
+    "MS RPC": 1025,
+    "OpenVPN": 1194,
+    "WASTE": 1337,
+    "Cisco VQP": 1589,
+    "Steam": 1725,
+    "cPanel": 2082,
+    "radsec": 2083,
+    "Oracle DB": 2483,
+    "Oracle DB SSL": 2484,
+    "Semantec AV": 2967,
+    "XBOX Live": 3074,
+    "MySQL": 3306,
+    "World of Warcraft": 3724,
+    "Google Desktop": 4664,
+    "PostgresSQL": 5432,
+    "RFB/VNC": 5900,
+    "IRC1": 6665,
+    "IRC2": 6666,
+    "IRC3": 6667,
+    "IRC4": 6668,
+    "IRC5": 6669,
+    "BitTorrent": 6881,
+    "Quicktime": 6970,
+    "BitTorrent2": 6999,
+    "Kaspersky CC": 8086,
+    "Kaspersky": 8087,
+    "VMWare Server": 8222,
+    "PDL": 9100,
+    "BackupExec": 10000,
+    "NetBus": 12345,
+    "Sub7": 27374,
+    "Back Orifice": 31337,
+}
 
 @dataclass
 class LAN_Client():
@@ -58,6 +123,24 @@ class LAN_Client():
         return LAN_Client_dict        
 
 # ===============================================================================================
+def get_port_name(port:int) -> str:
+    """
+    Retrieve (common) port name if defined else none.
+
+    Args:
+        port (int): port number
+
+    Returns:
+        str: Port name if found, else none
+    """
+    port_name = None
+    if port in COMMON_PORTS.values():
+        for key, val in COMMON_PORTS.items():
+            if val == port:
+                port_name = key
+                break
+    return port_name
+
 def _get_ipaddress_obj(ip: str) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
     """
     get ip_address object
@@ -102,26 +185,6 @@ def is_ipv6_address(ip: str) -> bool:
     ip_obj = _get_ipaddress_obj(ip)
     return ip_obj is not None and isinstance(ip_obj, ipaddress.IPv6Address)
 
-# def is_ipv4_address(ip_address: str) -> bool:
-#     """
-#     Valid IPv4 address in dotted-quad notation.
-    
-#     Args:
-#         ip_address: (str) in format 999.999.999.999
-
-#     Example::
-
-#         >>> is_ipv4_address("1.2.3.4")
-#         True
-#         >>> is_ipv4_address("127.0.0.1/8")
-#         False
-#         >>> is_ipv4_address("1.2.3.4.5")
-#         False
-#     """
-#     octets = ip_address.split(".")
-
-#     return len(octets) == 4 and \
-#         all(o.isdigit() and 0 <= int(o) < 256 for o in octets)
 
 def is_port_open(host_name: str, port: int, timeout:float=1.0) -> bool:
     """
@@ -285,7 +348,7 @@ def get_local_ip() -> str:
 
     return ip
  
-def get_mac_address(hostname_or_ip: str) -> str:
+def get_mac_address(hostname_or_ip: str, via_ARP_broadcast: bool = False) -> str:
     """
     Get MAC address of target Hostname (or IP).
 
@@ -297,35 +360,19 @@ def get_mac_address(hostname_or_ip: str) -> str:
     Returns:
         MAC address if found, else None
     """
-    local_ip = get_local_ip()
+    # local_ip = get_local_ip()
     if is_ipv4_address(hostname_or_ip):
         ip = hostname_or_ip
     else:
-        try:
-            ip = socket.gethostbyname(hostname_or_ip)
-        except socket.gaierror as sge:
-            LOGGER.debug(f'Unable to resolve IP for {hostname_or_ip} [{sge}]')
+        ip = get_ip_from_hostname(hostname_or_ip)
+        if len(ip) == 0:
             return None
+        
     mac = None
-    if ip == local_ip:
-        mac = (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1]))
-    else:
-        process_rslt = subprocess.run(_arp_entries_command(), capture_output=True)
-        rslt = process_rslt.stdout.decode('utf-8')
-        mac = None
-        arp_list = rslt.split('\n')
-        try:
-            arp = [token for token in arp_list if ip in token][0]
-            if arp.endswith('no entry'):
-                LOGGER.debug(f'no entry in ARP for {ip}')
-            else:
-                if OSHelper().is_windows():
-                    mac = " ".join(arp.split()).split()[1]
-                else:
-                    mac = " ".join(arp.split()).split()[2]
-                mac = mac.replace('-',':').upper()
-        except IndexError:  # no arp entry found
-            LOGGER.debug(f'Can not resolve MAC for {hostname_or_ip}')
+    lan_list: List[LAN_Client] = get_lan_clients_ARP_broadcast() if via_ARP_broadcast else get_lan_clients_from_ARP_cache()
+    for entry in lan_list:
+        if entry.ip == ip:
+            mac = entry.mac    
 
     return mac
 
@@ -339,35 +386,39 @@ def get_vendor_from_mac(mac: str) -> str:
     Returns:
         Vendor name if found, else 'unknown'
     """
+    if mac is None:
+        raise ValueError('MAC address cannot be None.')
     vendor = _UNKNOWN
-    url = f'https://api.maclookup.app/v2/macs/{mac}'
+    # url = f'https://api.maclookup.app/v2/macs/{mac}'
+    url = f'https://api.macvendors.com/{mac}'
     retry = 0
     RETRY_MAX = 15
     try:
         while retry < RETRY_MAX and vendor == _UNKNOWN:
             resp = requests.get(url)
             if resp.status_code == 200:
-                vendor = resp.json()['company']      # api.maclookup
+                # vendor = resp.json()['company']      # api.maclookup
+                vendor = resp.text # api.macvendors.com
                 if len(vendor) == 0:
                     LOGGER.debug(f'  ERROR: Vendor not found, {url}, {resp.text}')
                     vendor = "Not Found"
                 if retry > 0:
                     LOGGER.debug(f'  SUCCESS. Retry succeeded, {vendor}, {url}')    
-            elif resp.status_code == 429:
+            elif resp.status_code == 429:  # You've been throttled
                 retry += 1
-                sleep_secs = random.uniform(.25,2.5)
-                LOGGER.debug(f'  WARNING: Throttle [{retry}]... {sleep_secs:1.2} {url}')
+                sleep_secs = random.uniform(0.5,3.5)
+                LOGGER.warning(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
                 sleep(sleep_secs) # Throttle (limit = 2 requests/second)
             else:
                 LOGGER.debug(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
                 retry = RETRY_MAX
 
     except Exception as ex:
-        LOGGER.debug(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
+        LOGGER.error(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
         vendor = _UNKNOWN
         
     if vendor == _UNKNOWN:
-        LOGGER.debug(f'  ERROR: Unable to resolve, {mac}')
+        LOGGER.error(f'  ERROR: Unable to resolve, {mac}')
 
     return vendor
 
@@ -453,7 +504,7 @@ def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_v
             lan_client_list.append(entry)
 
     if include_hostname or include_mac_vendor:
-        lan_client_list = _get_hostname_and_or_vendor(lan_client_list, include_hostname, include_mac_vendor)
+        lan_client_list = _get_hostname_and_or_vendor(lan_client_list, include_hostname, include_mac_vendor, bypass_cache=False)
 
     return lan_client_list
 
@@ -495,7 +546,7 @@ def _trackable_ip(ip: str) -> bool:
     
     return trackable
 
-def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool) -> List[LAN_Client]:
+def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
 
     updated_list: List[LAN_Client] = []
     from dt_tools.net.ip_info_helper import IpHelper
@@ -503,7 +554,7 @@ def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, inclu
     arp_entry: LAN_Client = None
 
     for arp_entry in client_list:
-        ip_data = ip_info.get_ip_info(arp_entry.ip)
+        ip_data = ip_info.get_ip_info(arp_entry.ip, bypass_cache=bypass_cache)
         if include_hostname:
             arp_entry.hostname = ip_data.get('hostname')
         if include_mac_vendor:

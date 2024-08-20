@@ -13,6 +13,16 @@ To minimize API calls (and response time):
 - IP Data is cached locally in ~/.IpHelper/cache.json
 - MAC Data is cached locally in ~/.IpHelper/mac_info.json
 
+For devices that are only identified by their IP and MAC address (no hostname),
+if hostname known, you may 'force' by manually updating ~/.IpHelper/mac_info.json, 
+which is keyed by mac address.
+format:
+    {
+        "XX:XX:XX:XX:XX:XX": {
+            "vendor": "Ring LLC",
+            "hostname": "Ring.Doorbell"
+        },
+    }
 """
 
 import json
@@ -33,7 +43,7 @@ import dt_tools.net.ip_info_helper as ih
 BASE_URL='https://ipinfo.io'
 TOKEN="NOT SET"
 
-IP_INFO_TOKEN_LOCATION=pathlib.Path('~').expanduser().absolute() / ".IpHelper" / "token.json"
+IP_INFO_TOKEN_LOCATION=pathlib.Path('~').expanduser().absolute() / ".IpHelper" / "ipinfo_token.json"
 IP_INFO_CACHE_LOCATION=pathlib.Path('~').expanduser().absolute() / ".IpHelper" / "cache.json"
 MAC_INFO_LOCATION=pathlib.Path('~').expanduser().absolute() / ".IpHelper" / "mac_info.json"
 
@@ -83,7 +93,7 @@ class IpHelper():
     # Class variables
     _cache_mtime: float = 0.0
     _cache: Dict[str, dict] = None
-    _mac_info: Dict[str, dict] = None
+    _mac_info: Dict[str, dict] = None  # Manually maintained.
     _token_initialized: bool = False
 
     @classmethod
@@ -114,12 +124,12 @@ class IpHelper():
     def _raise_token_error(cls):
         LOGGER.warning('A token is required for IpHelper to function.')
         LOGGER.warning('Tokens are free, to get your token, go to "https://ipinfo.io/missingauth')
-        LOGGER.warning('When you have a token run xxxx to set the token for IpHelper.')
+        LOGGER.warning('When you have a token run dt_set_iptoken to set the token for IpHelper.')
         raise RuntimeError('Invalid token for ipinfo.io.  See log and https://ipinfo.io/missingauth')
 
     @classmethod        
     def _load_cache(cls, purge_stale: bool = False):
-        _CACHE_SEMAPHORE.acquire(timeout=5.0)
+        _CACHE_SEMAPHORE.acquire(timeout=15.0)
         if cls._refresh_required:
             IpHelper._cache = {}
             if not IP_INFO_CACHE_LOCATION.exists():
@@ -191,6 +201,7 @@ class IpHelper():
     @classmethod
     def _expires(cls, entry: dict) -> str:
         cached_time =  entry.get('_cached', None)
+        expires = "Unknown"
         ttl = 'N/A'
         if cached_time:
             created = parser.parse(cached_time)
@@ -239,18 +250,20 @@ class IpHelper():
         if ip_address:
             if ip_address in IpHelper._cache.keys():
                 del IpHelper._cache[ip_address]
+                _CACHE_SEMAPHORE.acquire(timeout=2.0)
                 IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
+                _CACHE_SEMAPHORE.release()
                 IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
                 LOGGER.info(f'{ip_address} removed from cache')
             else:
                 LOGGER.warning(f'{ip_address} does NOT exist in cache')
         else:
+            _CACHE_SEMAPHORE.acquire(timeout=2.0)
             IP_INFO_CACHE_LOCATION.write_text("{}")
+            _CACHE_SEMAPHORE.release()
             IpHelper._cache = {}
             IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
         
-        # _CACHE_SEMAPHORE.release()
-
         cur_len = len(IpHelper._cache)
         removed_cnt = initial_cache_len - cur_len
         LOGGER.debug(f'IpHelper Cache cleared.  {removed_cnt} entries removed. {cur_len} entries remaining.')
@@ -290,57 +303,81 @@ class IpHelper():
         Returns:
             JSON dictionary of all data related to target IP address.
         """
-        
         urllib3.disable_warnings()
-        _CACHE_SEMAPHORE.acquire(timeout=15.0)
         cls._load_cache() 
-        ip_info = _UNKNOWN
-        if nh.is_ipv4_address(ip_address):
-            if not bypass_cache:
-                ip_info = IpHelper._cache.get(ip_address, None)
-                if ip_info and cls._stale(ip_address):
-                    LOGGER.debug(f'{ip_address} stale, will re-fresh')
-                    ip_info = None
-
-            if ip_info is None:
-                LOGGER.debug(f'{ip_address} NOT in cache')
-                url=f'{BASE_URL}/{ip_address}?token={TOKEN}'
-                resp = ""
-                try:
-                    resp = requests.get(url, verify=False)
-                    ip_info = resp.json()
-                except Exception as ex:
-                    ip_info = {'error': f'Exception: {repr(ex)}'}
-
-                if 'error' in ip_info:
-                    LOGGER.warning(f'ERROR - url: {url}  resp: {ip_info}')
-                else:
-                    ip = ip_info['ip']
-                    ip_info['mac'] = _UNKNOWN
-                    ip_info['vendor'] = _UNKNOWN
-                    if ip_info.get('hostname') is None:
-                        ip_info['hostname'] = nh.get_hostname_from_ip(ip)
-                    mac = nh.get_mac_address(ip)
-                    if mac:
-                        ip_info['mac'] = mac
-                        ip_info['vendor'] = nh.get_vendor_from_mac(mac)
-                        if ip_info['hostname'] == _UNKNOWN:
-                            hostname = IpHelper._mac_info.get(mac,{'hostname': _UNKNOWN})['hostname']
-                            ip_info['hostname'] = f'-> {hostname}'
-                        if ip_info['vendor'] == _UNKNOWN:
-                            vendor = IpHelper._mac_info.get(mac,{'vendor': _UNKNOWN})['vendor']
-                            ip_info['vendor'] = f'-> {vendor}'
-
-                    ip_info["_cached"] = datetime.now().isoformat()          
-                    IpHelper._cache[ip_address] = ip_info
-                    # TODO: Performance, ONLY write new entry
-                    LOGGER.debug(f'SUCCESS: cache updated: {ip}/{ip_info["hostname"]}/{mac}')
-                    IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
-                    IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
+        entry_updated = False
+        if not nh.is_ipv4_address(ip_address):
+            ip_info = {'ip': ip_address, "title": "Not IPv4 address", "error": "Only IPv4 addresses supported"}
+            return ip_info
+            
+        if bypass_cache:
+            LOGGER.debug('Bypassing cache lookup')
+            ip_info = None
         else:
-            ip_info = {"error": {"title": "Bad IP", "message":"Invalid or missing IP"}}
+            ip_info = IpHelper._cache.get(ip_address, None)
+            if ip_info and cls._stale(ip_address):
+                LOGGER.debug(f'{ip_address} stale, will re-fresh')
+                ip_info = None
+
+        if ip_info is None:
+            LOGGER.debug(f'{ip_address} NOT in cache or stale')
+            url=f'{BASE_URL}/{ip_address}?token={TOKEN}'
+            try:
+                resp = requests.get(url, verify=False)
+                ip_info = resp.json()
+                entry_updated = True
+            except Exception as ex:
+                resp = ""
+                LOGGER.debug(f'ERROR- url: {url} ex: {repr(ex)}')
+                ip_info = {'ip': {ip_address}, "title": "Error in API call", 'error': f'Exception: {url}- {repr(ex)}'}
+
+        if 'error' in ip_info.keys():
+            LOGGER.warning(f'ERROR - url: {url}  resp: {ip_info}')
+            return ip_info
+
+        ip = ip_info['ip']
+        mac = ip_info.get('mac', _UNKNOWN)
+        if ip_info.get('hostname', None) is None:
+            LOGGER.debug(f'get hostname from ip {ip}')
+            ip_info['hostname'] = nh.get_hostname_from_ip(ip)
+            if _UNKNOWN not in ip_info['hostname']:        
+                entry_updated = True
+
+        if _UNKNOWN in mac:
+            LOGGER.debug(f'get mac address for ip {ip}')
+            mac = nh.get_mac_address(ip)
+            if mac is None:
+                mac = nh.get_mac_address(ip, via_ARP_broadcast=True)
+            if mac is not None:
+                ip_info['vendor'] = nh.get_vendor_from_mac(mac)
+                entry_updated = True
+            else:
+                mac = _UNKNOWN
+
+        if _UNKNOWN not in mac:
+            ip_info['mac'] = mac
+            if _UNKNOWN in ip_info['hostname']:
+                hostname = IpHelper._mac_info.get(mac,{'hostname': _UNKNOWN})['hostname']
+                ip_info['hostname'] = f'-> {hostname}'
+                if _UNKNOWN not in hostname:
+                    entry_updated = True
+            if _UNKNOWN in ip_info['vendor']:
+                vendor = IpHelper._mac_info.get(mac,{'vendor': _UNKNOWN})['vendor']
+                ip_info['vendor'] = f'-> {vendor}'
+                if _UNKNOWN not in vendor:
+                    entry_updated = True
+
+        if entry_updated:
+            ip_info["_cached"] = datetime.now().isoformat() 
+            cls._load_cache() 
+            _CACHE_SEMAPHORE.acquire(timeout=5.0)
+            IpHelper._cache[ip_address] = ip_info
+            # TODO: Performance, ONLY write new entry
+            LOGGER.debug(f'SUCCESS: cache updated: {ip}/{ip_info["hostname"]}/{mac}')
+            IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
+            _CACHE_SEMAPHORE.release()
+            IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
         
-        _CACHE_SEMAPHORE.release()
         if not include_private_fields or not include_unknown_fields:
             new_dict = {}
             for key, value in ip_info.items():

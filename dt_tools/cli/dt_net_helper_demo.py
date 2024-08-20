@@ -2,6 +2,7 @@ from typing import List
 
 from loguru import logger as LOGGER
 
+import dt_tools.console.console_helper as ch
 import dt_tools.logger.logging_helper as lh
 import dt_tools.net.net_helper as helper
 from dt_tools.console.console_helper import ColorFG, ConsoleHelper
@@ -9,70 +10,70 @@ from dt_tools.console.console_helper import ConsoleInputHelper as con_input
 from dt_tools.console.spinner import Spinner, SpinnerType
 from dt_tools.net.net_helper import LAN_Client
 
-COMMON_PORTS = {
-    "Echo service": 7,
-    "FTP-data": 20,
-    "FTP": 21,
-    "SSH": 22,
-    "Telnet": 23,
-    "SMTP": 25,
-    "DNS": 53,
-    "TFTP": 69,
-    "HTTP": 80,
-    "Kerberos": 88,
-    "Iso-tsap": 102,
-    "POP3": 110,
-    "MS EPMAP": 135,
-    "NetBIOS-ns": 137,
-    "NetBIOS-ssn": 139,
-    "IMAP4": 143,
-    "HP Openview (alarm)": 381,
-    "HP Openview (data)": 383,
-    "HTTPS": 443,
-    "Kerberos (pwd)": 464,
-    "SMTP TLS/SSL": 465,
-    "SMTP (submission)": 587,
-    "MS DCOM": 593,
-    "LDAP TLS/SSL": 636,
-    "MS Exchange": 691,
-    "VMWare": 902,
-    "FTP SSL (data)": 989,
-    "FTP SSL (control)": 990,
-    "IMAP4 SSL": 993,
-    "POP3 SSL": 995,
-    "MS RPC": 1025,
-    "OpenVPN": 1194,
-    "WASTE": 1337,
-    "Cisco VQP": 1589,
-    "Steam": 1725,
-    "cPanel": 2082,
-    "radsec": 2083,
-    "Oracle DB": 2483,
-    "Oracle DB SSL": 2484,
-    "Semantec AV": 2967,
-    "XBOX Live": 3074,
-    "MySQL": 3306,
-    "World of Warcraft": 3724,
-    "Google Desktop": 4664,
-    "PostgresSQL": 5432,
-    "RFB/VNC": 5900,
-    "IRC1": 6665,
-    "IRC2": 6666,
-    "IRC3": 6667,
-    "IRC4": 6668,
-    "IRC5": 6669,
-    "BitTorrent": 6881,
-    "Quicktime": 6970,
-    "BitTorrent2": 6999,
-    "Kaspersky CC": 8086,
-    "Kaspersky": 8087,
-    "VMWare Server": 8222,
-    "PDL": 9100,
-    "BackupExec": 10000,
-    "NetBus": 12345,
-    "Sub7": 27374,
-    "Back Orifice": 31337,
-}
+# COMMON_PORTS = {
+#     "Echo service": 7,
+#     "FTP-data": 20,
+#     "FTP": 21,
+#     "SSH": 22,
+#     "Telnet": 23,
+#     "SMTP": 25,
+#     "DNS": 53,
+#     "TFTP": 69,
+#     "HTTP": 80,
+#     "Kerberos": 88,
+#     "Iso-tsap": 102,
+#     "POP3": 110,
+#     "MS EPMAP": 135,
+#     "NetBIOS-ns": 137,
+#     "NetBIOS-ssn": 139,
+#     "IMAP4": 143,
+#     "HP Openview (alarm)": 381,
+#     "HP Openview (data)": 383,
+#     "HTTPS": 443,
+#     "Kerberos (pwd)": 464,
+#     "SMTP TLS/SSL": 465,
+#     "SMTP (submission)": 587,
+#     "MS DCOM": 593,
+#     "LDAP TLS/SSL": 636,
+#     "MS Exchange": 691,
+#     "VMWare": 902,
+#     "FTP SSL (data)": 989,
+#     "FTP SSL (control)": 990,
+#     "IMAP4 SSL": 993,
+#     "POP3 SSL": 995,
+#     "MS RPC": 1025,
+#     "OpenVPN": 1194,
+#     "WASTE": 1337,
+#     "Cisco VQP": 1589,
+#     "Steam": 1725,
+#     "cPanel": 2082,
+#     "radsec": 2083,
+#     "Oracle DB": 2483,
+#     "Oracle DB SSL": 2484,
+#     "Semantec AV": 2967,
+#     "XBOX Live": 3074,
+#     "MySQL": 3306,
+#     "World of Warcraft": 3724,
+#     "Google Desktop": 4664,
+#     "PostgresSQL": 5432,
+#     "RFB/VNC": 5900,
+#     "IRC1": 6665,
+#     "IRC2": 6666,
+#     "IRC3": 6667,
+#     "IRC4": 6668,
+#     "IRC5": 6669,
+#     "BitTorrent": 6881,
+#     "Quicktime": 6970,
+#     "BitTorrent2": 6999,
+#     "Kaspersky CC": 8086,
+#     "Kaspersky": 8087,
+#     "VMWare Server": 8222,
+#     "PDL": 9100,
+#     "BackupExec": 10000,
+#     "NetBus": 12345,
+#     "Sub7": 27374,
+#     "Back Orifice": 31337,
+# }
 
 def display_LAN_report():
     ch = ConsoleHelper()
@@ -135,22 +136,24 @@ def display_LAN_report():
         c_idx = min(c_idx, len(sc_clients)-1)
 
 def demo():
-    # import urllib3
-    # urllib3.disable_warnings()
-
     ConsoleHelper.print('')
     ConsoleHelper.print_line_seperator('', 80)
     ConsoleHelper.print_line_seperator('dt_net_helper_demo', 80)
     ConsoleHelper.print('')
 
+    # Get local machines internal IP
     local_ip = helper.get_local_ip()
+    # Get local machines External IP
     wan_ip = helper.get_wan_ip()
+    # Get list of client machines on LAN
     lan_list: List[LAN_Client] = helper.get_lan_clients_from_ARP_cache()
-    ip_dict = {"Local IP": local_ip, "WAN IP": wan_ip }
+    ip_dict = {"Local IP": local_ip, "WAN IP": wan_ip, "Bad IP": "192.168.1.0" }
     if len(lan_list) > 3:
+        # Choose two clients
         ip_dict['Client1'] = lan_list[0].ip
         ip_dict['Client2'] = lan_list[len(lan_list)-1].ip
 
+    # Display information for each client (machine) in list
     for ip_name, ip in ip_dict.items():
         is_valid = 'Valid' if helper.is_valid_host(ip) else 'Invalid'
         ip_type = 'Unknown'
@@ -158,14 +161,17 @@ def demo():
             ip_type = "IPv4"
         elif helper.is_ipv6_address(ip):
             ip_type = "IPv6"
-        hostname = helper.get_hostname_from_ip(ip)
-        mac = helper.get_mac_address(ip)
-        vendor = helper.get_vendor_from_mac(mac)
-        is_alive = helper.ping(ip)
-        ConsoleHelper.print_line_seperator(f'{ip_name} Info', 40)
-        ConsoleHelper.print(f'ip         : {ConsoleHelper.cwrap(ip,ColorFG.YELLOW)} {is_valid}')
+
         if is_valid == 'Valid':
-            ConsoleHelper.print(f'IP Type    : {ConsoleHelper.cwrap(ip_type,ColorFG.YELLOW)}')
+            hostname = helper.get_hostname_from_ip(ip)
+            mac = helper.get_mac_address(ip, via_ARP_broadcast=True)
+            vendor = helper.get_vendor_from_mac(mac) if mac is not None else 'unknown'
+            is_alive = helper.ping(ip)
+
+        ConsoleHelper.print_line_seperator(f'{ip_name} Info', 40)
+        ConsoleHelper.print(f'IP         : {ConsoleHelper.cwrap(ip,ColorFG.YELLOW)} {is_valid}')
+        ConsoleHelper.print(f'IP Type    : {ConsoleHelper.cwrap(ip_type,ColorFG.YELLOW)}')
+        if is_valid == 'Valid':
             ConsoleHelper.print(f'hostname   : {ConsoleHelper.cwrap(hostname,ColorFG.YELLOW)}')
             ConsoleHelper.print(f'mac        : {ConsoleHelper.cwrap(mac,ColorFG.YELLOW)}')
             ConsoleHelper.print(f'mac vendor : {ConsoleHelper.cwrap(vendor,ColorFG.YELLOW)}')
@@ -177,7 +183,7 @@ def demo():
                 if resp == 'y':
                     ConsoleHelper.print_line_seperator('Scan for open Ports: ', 27)
                     ConsoleHelper.print('  .', eol='')
-                    for port_use, port in COMMON_PORTS.items():
+                    for port_use, port in helper.COMMON_PORTS.items():
                         if helper.is_port_open(ip, port):
                             ConsoleHelper.cursor_move(column=1)
                             ConsoleHelper.clear_to_EOL()
@@ -187,11 +193,12 @@ def demo():
                             ConsoleHelper.print('.',eol='')
                     ConsoleHelper.cursor_move(column=1)
                     ConsoleHelper.clear_to_EOL()
-            ConsoleHelper.print('')
+        ConsoleHelper.print('')
 
     display_LAN_report()
 
 if __name__ == '__main__':
+    ch.enable_ctrl_c_handler()
     lh.configure_logger()
     demo()
     
