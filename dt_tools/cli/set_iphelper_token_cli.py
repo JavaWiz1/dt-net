@@ -39,9 +39,10 @@ def manage_token():
             LOGGER.warning('Empty token, did not save.')
         else:
             token_dict = json.dumps({"token": token})
+            ih.IP_INFO_TOKEN_LOCATION.parent.mkdir(parents=True, exist_ok=True)
             ih.IP_INFO_TOKEN_LOCATION.write_text(token_dict)
             LOGGER.success('Token saved.')
-        LOGGER.info()
+        LOGGER.info('')
     
     print('Process complete.')
 

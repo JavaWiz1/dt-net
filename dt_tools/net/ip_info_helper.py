@@ -243,10 +243,10 @@ class IpHelper():
             ip_address -- IP address to be cleared (default: {None})
               If None, all entries will be removed.
         """
-        cls._load_cache()
-        initial_cache_len = len(IpHelper._cache)
         IP_INFO_CACHE_LOCATION.parent.mkdir(exist_ok=True)
         IP_INFO_CACHE_LOCATION.touch(exist_ok=True)
+        cls._load_cache()
+        initial_cache_len = len(IpHelper._cache)
         if ip_address:
             if ip_address in IpHelper._cache.keys():
                 del IpHelper._cache[ip_address]
