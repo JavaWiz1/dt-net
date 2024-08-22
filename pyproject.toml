@@ -25,6 +25,7 @@ requests = "^2"
 scapy = "^2.5"
 python-dateutil = "^2.9"
 dt-console = "*"
+dt-misc = {path = "../dt-misc", develop = true }
 
 [[tool.poetry.source]]
 name = "PyPI"

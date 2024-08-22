@@ -254,7 +254,7 @@ class IpHelper():
                 IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
                 _CACHE_SEMAPHORE.release()
                 IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
-                LOGGER.info(f'{ip_address} removed from cache')
+                LOGGER.debug(f'{ip_address} removed from cache')
             else:
                 LOGGER.warning(f'{ip_address} does NOT exist in cache')
         else:
