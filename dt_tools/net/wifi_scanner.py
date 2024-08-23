@@ -252,8 +252,10 @@ class WindowsWiFiScanner(ScannerBase):
             elif keyword.startswith("Band"):
                 bssid_info.band = value
             elif keyword.startswith("Channel"):
-                bssid_info.channel = int(value)
-
+                try:
+                    bssid_info.channel = int(value)
+                except ValueError:
+                    bssid_info.channel = value
         if ssid_info.name != CONSTANTS.UNKNOWN:
             # Append the last access point
             if bssid_info.mac != CONSTANTS.UNKNOWN:

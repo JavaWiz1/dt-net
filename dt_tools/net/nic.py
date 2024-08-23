@@ -6,7 +6,7 @@ from dt_tools.net.wifi_scanner import CONSTANTS
 import dt_tools.logger.logging_helper as lh
 
 from loguru import logger as LOGGER
-from dt_tools.misc import Misc as helper
+from dt_tools.misc.helpers import ObjectHelper as o_helper
 
 
 # == Adapter Object ==========================================================================================================   
@@ -21,6 +21,7 @@ class WifiAdapterInfo:
     radio_type: str = ''
     Authentication: str = ''
     cipher: str = ''
+    band: str = ''
     channel: int = -1
     receive_rate: float = -1.0
     transmit_rate: float = -1.0
@@ -28,15 +29,15 @@ class WifiAdapterInfo:
 
     def __post_init__(self):
         if OSHelper.is_windows():
-            if not self._get_windows_adapter():
-                raise NameError(f'Unable to identify adapter "{self.name}"')
+            if not self._get_windows_wifi_adapter():
+                raise NameError(f'Unable to identify wifi adapter "{self.name}"')
         elif OSHelper.is_linux():
-            if not self._get_linux_adapter():
-                raise NameError(f'Unable to identify adapter "{self.name}"')
+            if not self._get_linux_wifi_adapter():
+                raise NameError(f'Unable to identify wifi adapter "{self.name}"')
         else:
-            raise NameError(f'No adapter exists named "{self.name}"')
+            raise RuntimeError(f'Unsupported OS.')
         
-    def _get_linux_adapter(self) -> bool:
+    def _get_linux_wifi_adapter(self) -> bool:
         # iw wlan0 info = channel, mhz, mac
         iwconfig_output, _ = ScannerBase._execute_process('iwconfig', show_feedback=False)
         adapter_found = False
@@ -66,6 +67,7 @@ class WifiAdapterInfo:
                 self.signal = int(int(signals[0]) / int(signals[1]) * 100)
             # self.Authentication
             # self.channel
+            # self.band
             # self.cipher
             # self.connected
             # self.desc
@@ -74,12 +76,12 @@ class WifiAdapterInfo:
 
         return adapter_found
     
-    def _get_windows_adapter(self) -> bool:
+    def _get_windows_wifi_adapter(self) -> bool:
         netsh_output, _ = ScannerBase._execute_process('netsh wlan show interfaces', show_feedback=False)
         adapter_found = self._process_netsh_adapter_output(netsh_output)
-        if not adapter_found:
-            netsh_output, _ = ScannerBase._execute_process('netsh lan show interfaces', show_feedback=False)
-            adapter_found = self._process_netsh_adapter_output(netsh_output)
+        # if not adapter_found:
+        #     netsh_output, _ = ScannerBase._execute_process('netsh lan show interfaces', show_feedback=False)
+        #     adapter_found = self._process_netsh_adapter_output(netsh_output)
 
         return adapter_found
     
@@ -129,6 +131,9 @@ class WifiAdapterInfo:
                 continue
             if line.startswith('Channel'):
                 self.channel = int(value)
+                continue
+            if line.startswith('Band'):
+                self.band = value
                 continue
             if line.startswith('Receive rate'):
                 self.receive_rate = float(value)
@@ -199,8 +204,10 @@ if __name__ == "__main__":
 
     for adapter_name in adapter_list:
         try:
+            LOGGER.info('')
+            LOGGER.info(f"Getting info for '{adapter_name}'")
             adapter = WifiAdapterInfo(adapter_name)
-            LOGGER.info(f'{adapter_name} adapter FOUND.\n{json.dumps(helper.to_dict(adapter), indent=2)}')
-        except NameError:
-            LOGGER.error(f'{adapter_name} adapter not found or not enabled.')
+            LOGGER.success(f'{json.dumps(o_helper.to_dict(adapter), indent=2)}')
+        except NameError  as ne:
+            LOGGER.error(f'- {repr(ne)}.  Are you sure its a WiFi adapter?')
 
