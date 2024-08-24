@@ -1,7 +1,7 @@
 [tool.poetry]
 package-mode = true 
 name = "dt-net"
-version = "0.1.4"
+version = "0.1.5"
 description = "Network helper tools"
 authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
 readme = "README.md"
@@ -25,7 +25,8 @@ requests = "^2"
 scapy = "^2.5"
 python-dateutil = "^2.9"
 dt-console = "*"
-dt-misc = {path = "../dt-misc", develop = true }
+dt-misc = "*"
+# dt-misc = {path = "../dt-misc", develop = true }
 
 [[tool.poetry.source]]
 name = "PyPI"
