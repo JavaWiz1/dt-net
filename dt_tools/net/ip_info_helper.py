@@ -28,17 +28,17 @@ format:
 import json
 import pathlib
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple
 from threading import Semaphore
+from typing import Dict, List, Tuple
 
 import requests
 import urllib3
-
 from dateutil import parser
+from dt_tools.logger.logging_helper import logger_wraps
 from loguru import logger as LOGGER
 
-from dt_tools.net import net_helper as nh
 import dt_tools.net.ip_info_helper as ih
+from dt_tools.net import net_helper as nh
 
 BASE_URL='https://ipinfo.io'
 TOKEN="NOT SET"
@@ -97,6 +97,7 @@ class IpHelper():
     _token_initialized: bool = False
 
     @classmethod
+    @logger_wraps(level="TRACE")
     def __init__(cls, purge_stale_entries: bool = True, no_token:bool = False):
         if not no_token:
             cls._validate_token()        
@@ -149,11 +150,16 @@ class IpHelper():
                 LOGGER.warning(f'  {repr(ex)}')
 
         if IpHelper._mac_info is None:
-            MAC_INFO_LOCATION.parent.mkdir(exist_ok=True)
-            MAC_INFO_LOCATION.touch(exist_ok=True)
+            if not MAC_INFO_LOCATION.parent.exists():
+                LOGGER.debug(f'Create directory {MAC_INFO_LOCATION.parent}')
+                MAC_INFO_LOCATION.parent.mkdir(exist_ok=True)
+            if not MAC_INFO_LOCATION.exists():
+                LOGGER.debug(f'Create MAC Cache file: {MAC_INFO_LOCATION}')
+                MAC_INFO_LOCATION.touch(exist_ok=True)
             buffer = MAC_INFO_LOCATION.read_text()
             if buffer == "":
                 buffer = "{}"
+            LOGGER.debug(f'Load MAC info from {MAC_INFO_LOCATION}')
             IpHelper._mac_info = json.loads(buffer)
 
         _CACHE_SEMAPHORE.release()
@@ -165,11 +171,13 @@ class IpHelper():
             last_update = IP_INFO_CACHE_LOCATION.stat().st_mtime
             if last_update > IpHelper._cache_mtime:
                 # Cache has been updated
+                LOGGER.debug('Cache refresh required!')
                 refresh = True
         elif IpHelper._cache is None:
+            LOGGER.debug('Cache is empty, refresh required!')
             refresh = True
-
-        # LOGGER.debug(f'refresh_required(): {refresh},')
+        else:
+            LOGGER.debug('Cache refresh is NOT required.')
         return refresh
 
     @classmethod
@@ -235,6 +243,7 @@ class IpHelper():
         return IpHelper._cache
             
     @classmethod            
+    @logger_wraps(level="TRACE")
     def clear_cache(cls, ip_address: str = None):
         """
         Clear the IP Info cache.
@@ -287,6 +296,7 @@ class IpHelper():
         return False
     
     @classmethod
+    @logger_wraps(level="TRACE")
     def get_ip_info(cls, ip_address: str, 
                     include_unknown_fields: bool = False, 
                     include_private_fields: bool = False,
@@ -336,7 +346,7 @@ class IpHelper():
             return ip_info
 
         ip = ip_info['ip']
-        mac = ip_info.get('mac', _UNKNOWN)
+        mac = ip_info.get('mac', _UNKNOWN).upper()
         if ip_info.get('hostname', None) is None:
             LOGGER.debug(f'get hostname from ip {ip}')
             ip_info['hostname'] = nh.get_hostname_from_ip(ip)
@@ -347,22 +357,24 @@ class IpHelper():
             LOGGER.debug(f'get mac address for ip {ip}')
             mac = nh.get_mac_address(ip)
             if mac is None:
-                mac = nh.get_mac_address(ip, via_ARP_broadcast=True)
-            if mac is not None:
-                ip_info['vendor'] = nh.get_vendor_from_mac(mac)
-                entry_updated = True
-            else:
                 mac = _UNKNOWN
+            # else:
+            #     ip_info['vendor'] = nh.get_vendor_from_mac(mac)
+            #     entry_updated = True
 
         if _UNKNOWN not in mac:
             ip_info['mac'] = mac
             if _UNKNOWN in ip_info['hostname']:
+                # Check the Mac Info cache
                 hostname = IpHelper._mac_info.get(mac,{'hostname': _UNKNOWN})['hostname']
+                LOGGER.debug(f'{mac} - Lookup hostname based on mac_info cache. [{hostname}]')
                 ip_info['hostname'] = f'-> {hostname}'
                 if _UNKNOWN not in hostname:
                     entry_updated = True
-            if _UNKNOWN in ip_info['vendor']:
+            if _UNKNOWN in ip_info.get('vendor',_UNKNOWN):
+                # Check the Mac Info cache
                 vendor = IpHelper._mac_info.get(mac,{'vendor': _UNKNOWN})['vendor']
+                LOGGER.debug(f'{mac} - Lookup vendor based on mac_info cache. {vendor}')
                 ip_info['vendor'] = f'-> {vendor}'
                 if _UNKNOWN not in vendor:
                     entry_updated = True

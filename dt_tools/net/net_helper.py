@@ -28,6 +28,7 @@ import scapy.all as scapy
 from loguru import logger as LOGGER
 
 from dt_tools.os.os_helper import OSHelper
+from dt_tools.logger.logging_helper import logger_wraps
 
 _UNKNOWN = 'unknown'
 
@@ -213,6 +214,7 @@ def is_port_open(host_name: str, port: int, timeout:float=1.0) -> bool:
 
     return port_is_open
 
+@logger_wraps(level="TRACE")
 def is_valid_host(host_name: str) -> bool:
     """
     Check if hos_tname is valid.  
@@ -246,6 +248,7 @@ def is_valid_host(host_name: str) -> bool:
     
 
 # == get hostname, ip, MAC, vendor routins ======================================================
+@logger_wraps(level="TRACE")
 def get_hostname_from_ip(ip: str) -> str:
     """
     Get hostname from IP address.
@@ -263,6 +266,7 @@ def get_hostname_from_ip(ip: str) -> str:
         hostname = _UNKNOWN
     return hostname
 
+@logger_wraps(level="TRACE")
 def get_ip_from_hostname(host_name: str) -> str:
     """
     Get IP address from hostname.
@@ -280,6 +284,7 @@ def get_ip_from_hostname(host_name: str) -> str:
         ip = ''
     return ip
 
+@logger_wraps(level="TRACE")
 def get_ip_from_mac(mac: str) -> str:
     """
     Get IP address based on MAC (via ARP)
@@ -294,7 +299,6 @@ def get_ip_from_mac(mac: str) -> str:
     Returns:
         str: IP address
     """
-    LOGGER.debug(f"get_ip_from_mac('{mac}')")
     if len(mac) == 17:
         sep = mac[2]
         mac = mac.replace(sep, _mac_separator()).lower()
@@ -329,6 +333,7 @@ def get_wan_ip() -> str:
     ip_info, _ = IpHelper.get_wan_ip_info()
     return ip_info.get('ip', _UNKNOWN)
 
+@logger_wraps(level="TRACE")
 def get_local_ip() -> str:
     """
     Get local IP address
@@ -348,12 +353,19 @@ def get_local_ip() -> str:
 
     return ip
 
+@logger_wraps(level="TRACE")
 def get_mac_address(ip: str) -> str:
     """
     Get mac address for specified IP
+
+    Returns:
+        str: MAC address or None if not found.
     """
     from scapy.layers.l2 import getmacbyip
-    return getmacbyip(ip)
+    mac = getmacbyip(ip)
+    if mac is not None:
+        mac = str(mac).upper()
+    return mac
 
 # def get_mac_address(hostname_or_ip: str, via_ARP_broadcast: bool = False) -> str:
 #     """
@@ -383,6 +395,7 @@ def get_mac_address(ip: str) -> str:
 
 #     return mac
 
+@logger_wraps(level="TRACE")
 def get_vendor_from_mac(mac: str) -> str:
     """
     Return the vendor name for specified MAC address
@@ -414,7 +427,7 @@ def get_vendor_from_mac(mac: str) -> str:
             elif resp.status_code == 429:  # You've been throttled
                 retry += 1
                 sleep_secs = random.uniform(0.5,3.5)
-                LOGGER.warning(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
+                LOGGER.debug(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
                 sleep(sleep_secs) # Throttle (limit = 2 requests/second)
             else:
                 LOGGER.debug(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
@@ -431,6 +444,7 @@ def get_vendor_from_mac(mac: str) -> str:
 
 
 # == ARP Calls ===============================================================================================
+@logger_wraps(level="TRACE")
 def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_vendor: bool = False) -> List[LAN_Client]:
     """
     Retrieve a list of LAN_Clients from the local network.
@@ -476,6 +490,7 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
 
     return lan_client_list        
 
+@logger_wraps(level="TRACE")
 def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_vendor: bool = False) -> List[LAN_Client]:
     """     
     Retrieve a list of LAN_Clients from the local network.
@@ -553,6 +568,7 @@ def _trackable_ip(ip: str) -> bool:
     
     return trackable
 
+@logger_wraps(level="TRACE")
 def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
 
     updated_list: List[LAN_Client] = []
