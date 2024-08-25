@@ -361,8 +361,14 @@ def get_mac_address(ip: str) -> str:
     Returns:
         str: MAC address or None if not found.
     """
-    from scapy.layers.l2 import getmacbyip
-    mac = getmacbyip(ip)
+    
+    if ip == get_local_ip():
+        import uuid
+        mac = (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1]))    
+    else:
+        from scapy.layers.l2 import getmacbyip
+        mac = getmacbyip(ip)
+    
     if mac is not None:
         mac = str(mac).upper()
     return mac
@@ -409,44 +415,36 @@ def get_vendor_from_mac(mac: str) -> str:
     if mac is None:
         raise ValueError('MAC address cannot be None.')
     vendor = _UNKNOWN
-    urls = [ f'https://api.maclookup.app/v2/macs/{mac}', f'https://api.macvendors.com/{mac}']
+    # url = f'https://api.maclookup.app/v2/macs/{mac}'
+    url = f'https://api.macvendors.com/{mac}'
     retry = 0
     RETRY_MAX = 15
     try:
-        LOGGER.warning(f'{mac} - vendor lookup')
         while retry < RETRY_MAX and vendor == _UNKNOWN:
-            url = urls[0]
             resp = requests.get(url)
             if resp.status_code == 200:
-                vendor = resp.json().get('company', '')      # api.maclookup
-                LOGGER.info(f'  {url} - {vendor}')
+                # vendor = resp.json()['company']      # api.maclookup
+                vendor = resp.text # api.macvendors.com
                 if len(vendor) == 0:
-                    url = urls[1]
-                    resp = requests.get(url)
-                    vendor = resp.text # api.macvendors.com
-                    if 'Not Found' in vendor:
-                        vendor = ''
-                    LOGGER.info(f'  {url} - {vendor}')
-                if len(vendor) == 0:
-                    LOGGER.warning(f'  ERROR: Vendor not found, {url}, {resp.text}')
+                    LOGGER.debug(f'  ERROR: Vendor not found, {url}, {resp.text}')
                     vendor = "Not Found"
-                elif retry > 0:
-                    LOGGER.success(f'  SUCCESS. Retry succeeded, {vendor}, {url}')    
+                if retry > 0:
+                    LOGGER.debug(f'  SUCCESS. Retry succeeded, {vendor}, {url}')    
             elif resp.status_code == 429:  # You've been throttled
                 retry += 1
                 sleep_secs = random.uniform(0.5,3.5)
-                LOGGER.warning(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
+                LOGGER.debug(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
                 sleep(sleep_secs) # Throttle (limit = 2 requests/second)
             else:
-                LOGGER.error(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
+                LOGGER.debug(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
                 retry = RETRY_MAX
 
     except Exception as ex:
-        LOGGER.error(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
+        LOGGER.debug(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
         vendor = _UNKNOWN
         
     if vendor == _UNKNOWN:
-        LOGGER.warning(f'  ERROR: Unable to resolve, {mac}')
+        LOGGER.debug(f'  ERROR: Unable to resolve, {mac}')
 
     return vendor
 
@@ -576,9 +574,9 @@ def _trackable_ip(ip: str) -> bool:
     
     return trackable
 
-def _get_hostname_and_or_vendor(client_list: List[LAN_Client], include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
+@logger_wraps(level="TRACE")
+def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
 
-    LOGGER.trace('Entering - get_hostname_and_or_vendor()')
     updated_list: List[LAN_Client] = []
     from dt_tools.net.ip_info_helper import IpHelper
     ip_info = IpHelper()
@@ -590,10 +588,8 @@ def _get_hostname_and_or_vendor(client_list: List[LAN_Client], include_hostname:
             arp_entry.hostname = ip_data.get('hostname')
         if include_mac_vendor:
             arp_entry.vendor = ip_data.get('vendor')
-
         updated_list.append(arp_entry)
 
-    LOGGER.trace('Exiting - get_hostname_and_or_vendor()')
     return updated_list
 
 def _get_target_protocol_address_pdst() -> str:

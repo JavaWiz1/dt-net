@@ -91,7 +91,7 @@ class IpHelper():
 
     """
     # Class variables
-    _cache_mtime: float = 0.0
+    _cache_last_update_mtime: float = 0.0
     _cache: Dict[str, dict] = None
     _mac_info: Dict[str, dict] = None  # Manually maintained.
     _token_initialized: bool = False
@@ -144,7 +144,7 @@ class IpHelper():
                 if purge_stale:
                     dropped = cls._drop_stale_entries()
                     LOGGER.debug(f'{dropped} IpHelper cache stale entries dropped.')
-                IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
+                IpHelper._cache_last_update_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
             except Exception as ex:
                 LOGGER.error(f'Unable to load IP Info Cache: {IP_INFO_CACHE_LOCATION}')
                 LOGGER.warning(f'  {repr(ex)}')
@@ -169,7 +169,7 @@ class IpHelper():
         refresh = False
         if IP_INFO_CACHE_LOCATION.exists():
             last_update = IP_INFO_CACHE_LOCATION.stat().st_mtime
-            if last_update > IpHelper._cache_mtime:
+            if last_update > IpHelper._cache_last_update_mtime:
                 # Cache has been updated
                 LOGGER.debug('Cache refresh required!')
                 refresh = True
@@ -244,13 +244,16 @@ class IpHelper():
             
     @classmethod            
     @logger_wraps(level="TRACE")
-    def clear_cache(cls, ip_address: str = None):
+    def clear_cache(cls, ip_address: str = None)-> int:
         """
         Clear the IP Info cache.
 
         Keyword Arguments:
             ip_address -- IP address to be cleared (default: {None})
               If None, all entries will be removed.
+        
+        Returns:
+            int -- Number of entries removed.
         """
         IP_INFO_CACHE_LOCATION.parent.mkdir(exist_ok=True)
         IP_INFO_CACHE_LOCATION.touch(exist_ok=True)
@@ -262,7 +265,7 @@ class IpHelper():
                 _CACHE_SEMAPHORE.acquire(timeout=2.0)
                 IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
                 _CACHE_SEMAPHORE.release()
-                IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
+                IpHelper._cache_last_update_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
                 LOGGER.debug(f'{ip_address} removed from cache')
             else:
                 LOGGER.warning(f'{ip_address} does NOT exist in cache')
@@ -271,12 +274,13 @@ class IpHelper():
             IP_INFO_CACHE_LOCATION.write_text("{}")
             _CACHE_SEMAPHORE.release()
             IpHelper._cache = {}
-            IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
+            IpHelper._cache_last_update_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
         
         cur_len = len(IpHelper._cache)
         removed_cnt = initial_cache_len - cur_len
         LOGGER.debug(f'IpHelper Cache cleared.  {removed_cnt} entries removed. {cur_len} entries remaining.')
-
+        return removed_cnt
+    
     @classmethod
     def is_cached(cls, ip_address: str) -> bool:
         """
@@ -319,18 +323,19 @@ class IpHelper():
         if not nh.is_ipv4_address(ip_address):
             ip_info = {'ip': ip_address, "title": "Not IPv4 address", "error": "Only IPv4 addresses supported"}
             return ip_info
-            
+
+        LOGGER.debug(f'GET_IP_INFO for {ip_address}')   
         if bypass_cache:
-            LOGGER.debug('Bypassing cache lookup')
+            LOGGER.debug('- Bypassing cache lookup')
             ip_info = None
         else:
             ip_info = IpHelper._cache.get(ip_address, None)
             if ip_info and cls._stale(ip_address):
-                LOGGER.debug(f'{ip_address} stale, will re-fresh')
+                LOGGER.debug(f'- {ip_address} stale, will re-fresh')
                 ip_info = None
 
         if ip_info is None:
-            LOGGER.debug(f'{ip_address} NOT in cache or stale')
+            LOGGER.debug(f'- {ip_address} NOT in cache or stale')
             url=f'{BASE_URL}/{ip_address}?token={TOKEN}'
             try:
                 resp = requests.get(url, verify=False)
@@ -338,7 +343,7 @@ class IpHelper():
                 entry_updated = True
             except Exception as ex:
                 resp = ""
-                LOGGER.debug(f'ERROR- url: {url} ex: {repr(ex)}')
+                LOGGER.debug(f'  ERROR- url: {url} ex: {repr(ex)}')
                 ip_info = {'ip': {ip_address}, "title": "Error in API call", 'error': f'Exception: {url}- {repr(ex)}'}
 
         if 'error' in ip_info.keys():
@@ -347,38 +352,36 @@ class IpHelper():
 
         ip = ip_info['ip']
         mac = ip_info.get('mac', _UNKNOWN)
-        if 'vendor' not in ip_info.keys():
-            ip_info['vendor'] = _UNKNOWN
-
         if ip_info.get('hostname', None) is None:
-            LOGGER.debug(f'get hostname from ip {ip}')
+            LOGGER.debug(f'- get hostname from ip {ip}')
             ip_info['hostname'] = nh.get_hostname_from_ip(ip)
             if _UNKNOWN not in ip_info['hostname']:        
                 entry_updated = True
 
         if _UNKNOWN in mac:
-            LOGGER.debug(f'get mac address for ip {ip}')
+            LOGGER.debug(f'- get mac address for ip {ip}')
             mac = nh.get_mac_address(ip)
             if mac is None:
                 mac = _UNKNOWN
             else:
-                vendor = nh.get_vendor_from_mac(mac)
-                ip_info['vendor'] = vendor
-                LOGGER.debug(f'{ip} - mac is {mac}  vendor is {vendor}')
+                ip_info['vendor'] = nh.get_vendor_from_mac(mac)
+                entry_updated = True
 
-        if _UNKNOWN not in mac:
+        if _UNKNOWN in mac:
+            LOGGER.debug(f'- Unable to determine MAC from ip {ip}')
+        else:
             ip_info['mac'] = mac
             if _UNKNOWN in ip_info['hostname']:
                 # Check the Mac Info cache
                 hostname = IpHelper._mac_info.get(mac,{'hostname': _UNKNOWN})['hostname']
-                LOGGER.debug(f'{mac} - Lookup hostname based on mac_info cache. [{hostname}]')
+                LOGGER.debug(f'- {mac} - Lookup hostname based on mac_info cache. [{hostname}]')
                 ip_info['hostname'] = f'-> {hostname}'
                 if _UNKNOWN not in hostname:
                     entry_updated = True
             if _UNKNOWN in ip_info.get('vendor',_UNKNOWN):
                 # Check the Mac Info cache
                 vendor = IpHelper._mac_info.get(mac,{'vendor': _UNKNOWN})['vendor']
-                LOGGER.debug(f'{mac} - Lookup vendor based on mac_info cache. {vendor}')
+                LOGGER.debug(f'- {mac} - Lookup vendor based on mac_info cache. {vendor}')
                 ip_info['vendor'] = f'-> {vendor}'
                 if _UNKNOWN not in vendor:
                     entry_updated = True
@@ -389,10 +392,10 @@ class IpHelper():
             _CACHE_SEMAPHORE.acquire(timeout=5.0)
             IpHelper._cache[ip_address] = ip_info
             # TODO: Performance, ONLY write new entry
-            LOGGER.debug(f'SUCCESS: cache updated: {ip}/{ip_info["hostname"]}/{mac}')
             IP_INFO_CACHE_LOCATION.write_text(json.dumps(IpHelper._cache))
             _CACHE_SEMAPHORE.release()
-            IpHelper._cache_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
+            LOGGER.debug(f'SUCCESS: cache updated: {ip}/{ip_info["hostname"]}/{mac}')
+            IpHelper._cache_last_update_mtime = IP_INFO_CACHE_LOCATION.stat().st_mtime
         
         if not include_private_fields or not include_unknown_fields:
             new_dict = {}
@@ -458,13 +461,14 @@ class IpHelper():
         return found_keys
         
     @classmethod
-    def list_cache(cls, ip: str = None):
+    def list_cache(cls, ip: str = None, show_all_fields: bool = True):
         """
         Print formatted contents of cache to console.
 
         Keyword Arguments:
             ip: Target IP Address (default: {None}).
               If None, all entries will be output.
+            show_all_fields: Include private (_) fields. (default: {True}).
         """
         cls._load_cache() # Update memory with any changes
         if len(IpHelper._cache) == 0:
@@ -473,13 +477,13 @@ class IpHelper():
             entry = IpHelper._cache.get(ip, None)
             if entry:
                 LOGGER.success(f'-- {ip} ---------------------------------------')
-                cls._print_entry(entry)
+                cls._print_entry(entry, show_all=show_all_fields)
             else:
                 LOGGER.warning(f'{ip} does NOT exist in cache.')
         else:
             for key, entry in IpHelper._cache.items():
                 LOGGER.success(f'-- {key} ---------------------------------------')
-                cls._print_entry(entry)
+                cls._print_entry(entry, show_all=show_all_fields)
                 LOGGER.info('')
             LOGGER.info(f'IP Info cache contains {len(IpHelper._cache)} entries')
 
