@@ -346,7 +346,10 @@ class IpHelper():
             return ip_info
 
         ip = ip_info['ip']
-        mac = ip_info.get('mac', _UNKNOWN).upper()
+        mac = ip_info.get('mac', _UNKNOWN)
+        if 'vendor' not in ip_info.keys():
+            ip_info['vendor'] = _UNKNOWN
+
         if ip_info.get('hostname', None) is None:
             LOGGER.debug(f'get hostname from ip {ip}')
             ip_info['hostname'] = nh.get_hostname_from_ip(ip)
@@ -358,9 +361,10 @@ class IpHelper():
             mac = nh.get_mac_address(ip)
             if mac is None:
                 mac = _UNKNOWN
-            # else:
-            #     ip_info['vendor'] = nh.get_vendor_from_mac(mac)
-            #     entry_updated = True
+            else:
+                vendor = nh.get_vendor_from_mac(mac)
+                ip_info['vendor'] = vendor
+                LOGGER.debug(f'{ip} - mac is {mac}  vendor is {vendor}')
 
         if _UNKNOWN not in mac:
             ip_info['mac'] = mac
