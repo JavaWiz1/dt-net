@@ -39,6 +39,9 @@ from loguru import logger as LOGGER
 
 import dt_tools.net.ip_info_helper as ih
 from dt_tools.net import net_helper as nh
+from dt_tools.console.console_helper import ConsoleHelper as console
+from dt_tools.console.console_helper import TextStyle
+
 
 BASE_URL='https://ipinfo.io'
 TOKEN="NOT SET"
@@ -476,13 +479,13 @@ class IpHelper():
         elif ip is not None:
             entry = IpHelper._cache.get(ip, None)
             if entry:
-                LOGGER.success(f'-- {ip} ---------------------------------------')
+                LOGGER.success(f'{console.cwrap(f"-- {ip} ---------------------------------------", style=TextStyle.BOLD)}')
                 cls._print_entry(entry, show_all=show_all_fields)
             else:
                 LOGGER.warning(f'{ip} does NOT exist in cache.')
         else:
             for key, entry in IpHelper._cache.items():
-                LOGGER.success(f'-- {key} ---------------------------------------')
+                LOGGER.success(f'{console.cwrap(f"-- {key} ---------------------------------------", style=TextStyle.BOLD)}')
                 cls._print_entry(entry, show_all=show_all_fields)
                 LOGGER.info('')
             LOGGER.info(f'IP Info cache contains {len(IpHelper._cache)} entries')

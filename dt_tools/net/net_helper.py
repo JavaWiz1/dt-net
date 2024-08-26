@@ -373,34 +373,6 @@ def get_mac_address(ip: str) -> str:
         mac = str(mac).upper()
     return mac
 
-# def get_mac_address(hostname_or_ip: str, via_ARP_broadcast: bool = False) -> str:
-#     """
-#     Get MAC address of target Hostname (or IP).
-
-#     Process uses ARP to discover data.
-
-#     Arguments:
-#         hostname_or_ip: target host
-
-#     Returns:
-#         MAC address if found, else None
-#     """
-#     # local_ip = get_local_ip()
-#     if is_ipv4_address(hostname_or_ip):
-#         ip = hostname_or_ip
-#     else:
-#         ip = get_ip_from_hostname(hostname_or_ip)
-#         if len(ip) == 0:
-#             return None
-        
-#     mac = None
-#     lan_list: List[LAN_Client] = get_lan_clients_ARP_broadcast() if via_ARP_broadcast else get_lan_clients_from_ARP_cache()
-#     for entry in lan_list:
-#         if entry.ip == ip:
-#             mac = entry.mac    
-
-#     return mac
-
 @logger_wraps(level="TRACE")
 def get_vendor_from_mac(mac: str) -> str:
     """
