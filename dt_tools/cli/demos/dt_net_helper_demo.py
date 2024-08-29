@@ -77,7 +77,7 @@ from dt_tools.net.net_helper import LAN_Client
 
 def display_LAN_report():
     ch = ConsoleHelper()
-    ch.print_line_seperator('LAN Client Report', 40)
+    ch.print_line_separator('LAN Client Report', 40)
     
     spinner = Spinner("Retrieve ARP Entries", SpinnerType.ARC, show_elapsed=True)
 
@@ -124,10 +124,17 @@ def display_LAN_report():
             b_mac = ""
             c_mac = cache_entry.mac
             ip = cache_entry.ip
-            hostname = cache_entry.hostname
-            vendor = cache_entry.vendor
+            hostname = cache_entry.hostname if cache_entry.hostname is not None else '?'
+            vendor = cache_entry.vendor if cache_entry.vendor is not None else '?'
             c_idx += 1
-        print(f'{b_mac:17}  {c_mac:17}  {ip:15} {hostname:33} {vendor}')
+        try:
+            print(f'{b_mac:17}  {c_mac:17}  {ip:15} {hostname:33} {vendor}')
+        except TypeError:
+            print(f'{b_mac    =}')
+            print(f'{c_mac    =}')
+            print(f'{ip       =}')
+            print(f'{hostname =}')
+            print(f'{vendor   =}')
         if b_idx == len(sb_clients):
             b_done = True
         if c_idx == len(sc_clients):
@@ -137,8 +144,8 @@ def display_LAN_report():
 
 def demo():
     ConsoleHelper.print('')
-    ConsoleHelper.print_line_seperator('', 80)
-    ConsoleHelper.print_line_seperator('dt_net_helper_demo', 80)
+    ConsoleHelper.print_line_separator('', 80)
+    ConsoleHelper.print_line_separator('dt_net_helper_demo', 80)
     ConsoleHelper.print('')
 
     # Get local machines internal IP
@@ -155,7 +162,7 @@ def demo():
 
     # Display information for each client (machine) in list
     for ip_name, ip in ip_dict.items():
-        is_valid = 'Valid' if helper.is_valid_host(ip) else 'Invalid'
+        is_valid = ConsoleHelper.cwrap('Valid', ColorFG.GREEN2) if helper.is_valid_host(ip) else ConsoleHelper.cwrap('Invalid', ColorFG.RED2)
         ip_type = 'Unknown'
         if helper.is_ipv4_address(ip):
             ip_type = "IPv4"
@@ -164,11 +171,11 @@ def demo():
 
         if is_valid == 'Valid':
             hostname = helper.get_hostname_from_ip(ip)
-            mac = helper.get_mac_address(ip, via_ARP_broadcast=True)
+            mac = helper.get_mac_address(ip)
             vendor = helper.get_vendor_from_mac(mac) if mac is not None else 'unknown'
             is_alive = helper.ping(ip)
 
-        ConsoleHelper.print_line_seperator(f'{ip_name} Info', 40)
+        ConsoleHelper.print_line_separator(f'{ip_name} Info', 40)
         ConsoleHelper.print(f'IP         : {ConsoleHelper.cwrap(ip,ColorFG.YELLOW)} {is_valid}')
         ConsoleHelper.print(f'IP Type    : {ConsoleHelper.cwrap(ip_type,ColorFG.YELLOW)}')
         if is_valid == 'Valid':
@@ -181,7 +188,7 @@ def demo():
                 ConsoleHelper.cursor_up()
                 ConsoleHelper.clear_line()
                 if resp == 'y':
-                    ConsoleHelper.print_line_seperator('Scan for open Ports: ', 27)
+                    ConsoleHelper.print_line_separator('Scan for open Ports: ', 27)
                     ConsoleHelper.print('  .', eol='')
                     for port_use, port in helper.COMMON_PORTS.items():
                         if helper.is_port_open(ip, port):

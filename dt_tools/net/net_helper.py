@@ -623,7 +623,7 @@ def _mac_separator() -> str:
 
 
 if __name__ == "__main__":
-    import dt_tools.cli.dt_net_demos as cli
+    import dt_tools.cli.demo.dt_net_demos as cli
     import dt_tools.logger.logging_helper as lh
     lh.configure_logger()
     cli.demo()

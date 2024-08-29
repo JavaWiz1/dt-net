@@ -35,7 +35,7 @@ class WifiAdapterInfo:
             if not self._get_linux_wifi_adapter():
                 raise NameError(f'Unable to identify wifi adapter "{self.name}"')
         else:
-            raise RuntimeError(f'Unsupported OS.')
+            raise RuntimeError('Unsupported OS.')
         
     def _get_linux_wifi_adapter(self) -> bool:
         # iw wlan0 info = channel, mhz, mac
