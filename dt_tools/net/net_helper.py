@@ -3,7 +3,6 @@ Network utilities helper class.
 
 Functions to assist with network related information and tasks.
 
-
 - ping
 - local IP address
 - get ip for given hostname
@@ -102,16 +101,11 @@ class LAN_Client():
     """
     Data class to hold Lan Client information.
 
-    Members:
-        ip: IP address.
-        mac: MAC address.
-        hostname: Hostname
-        vendor: MAC vendor.
     """
-    ip: str
-    mac: str
-    hostname: str = None
-    vendor: str = None
+    ip: str #: Device IP address
+    mac: str #: Device MAC address
+    hostname: str = None # Device hostname
+    vendor: str = None # NIC Vendor
 
     def to_dict(self):
         """
@@ -161,11 +155,20 @@ def _get_ipaddress_obj(ip: str) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Ad
     return ip_obj
 
 def is_valid_ipaddress(ip: str) -> bool:
+    """
+    Check if IP is valid address.
+
+    Args:
+        ip (str): IP address.
+
+    Returns:
+        bool: True if valid else False.
+    """
     return _get_ipaddress_obj(ip) is not None
 
 def is_ipv4_address(ip: str) -> bool:
     """
-    Valid IPv4 address in dotted-quad notation.
+    Validate IPv4 address in dotted-quad notation.
     
     Args:
         ip_address: (str) in format 999.999.999.999
@@ -183,6 +186,15 @@ def is_ipv4_address(ip: str) -> bool:
     return ip_obj is not None and isinstance(ip_obj, ipaddress.IPv4Address)
 
 def is_ipv6_address(ip: str) -> bool:
+    """
+    Validate IPv6 address.
+
+    Args:
+        ip (str): IPv6 formatted address.
+
+    Returns:
+        bool: True if valid else False.
+    """
     ip_obj = _get_ipaddress_obj(ip)
     return ip_obj is not None and isinstance(ip_obj, ipaddress.IPv6Address)
 
@@ -312,14 +324,15 @@ def get_ip_from_mac(mac: str) -> str:
     # arp_cmd = cls._get_arp_cmd()
     process_rslt = subprocess.run(_arp_entries_command(), capture_output=True)
     rslt = process_rslt.stdout.decode('utf-8').splitlines()
-    LOGGER.critical(f'MAC: {mac}\nRESULT: {rslt}')
+    LOGGER.debug(f'MAC: {mac}\nRESULT: {rslt}')
     arp = [token for token in rslt if mac in token]
-    LOGGER.critical(f'  arp line: {arp}')
+    arp_line = arp[0]
+    LOGGER.debug(f'  arp line: {arp}')
     ip = None
     if platform.system() == "Windows":
-        ip = " ".join(arp.split()).split()[0]
+        ip = " ".join(arp_line.split()).split()[0]
     else:
-        ip = " ".join(arp.split()).split()[2]
+        ip = " ".join(arp_line.split()).split()[2]
     
     if ip is not None:
         LOGGER.debug(f'  MAC {mac} resolves to {ip}')
@@ -328,6 +341,12 @@ def get_ip_from_mac(mac: str) -> str:
     raise ValueError(f'Can not determine IP for mac {mac}')
 
 def get_wan_ip() -> str:
+    """
+    Get the WAN (ie. Internet) IP address for this device.
+
+    Returns:
+        str: WAN IP or 'Unknown'
+    """
     from dt_tools.net.ip_info_helper import IpHelper
 
     ip_info, _ = IpHelper.get_wan_ip_info()
@@ -429,9 +448,6 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
 
     The list of clients are retrieved via a Scapy ARP broadcast
 
-    Note:
-        including hostname and/or vendor will slow down process due to additional calls
-
     Keyword Arguments:
         include_hostname: Include hostname information (default: {False})
         include_mac_vendor: Include MAC vendor name (default: {False})
@@ -442,6 +458,9 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
     Returns:
         A list of :class:`~LAN_Client` entries 
     
+    Note:
+        including hostname and/or vendor will slow down process due to additional calls
+
     """
     if OSHelper.is_linux() and not OSHelper.is_linux_root():
         LOGGER.critical('You must be root on linux for ARP_Broadcast to work')
@@ -475,15 +494,16 @@ def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_v
 
     The list of clients are retrieved via the ARP cache.
 
-    Note:
-        including hostname and/or vendor will slow down process due to additional calls
-
     Keyword Arguments:
         include_hostname: Include hostname information (default: {False})
         include_mac_vendor: Include MAC vendor name (default: {False})
 
     Returns:
         A list of :class:`~LAN_Client` entries 
+
+    Note:
+        including hostname and/or vendor will slow down process due to additional calls
+
     """
     arp_cmd = ["arp", "-a"] if OSHelper().is_windows() else ["arp", "-n"]
     LOGGER.debug(f'ARP command: {arp_cmd}')
@@ -623,7 +643,7 @@ def _mac_separator() -> str:
 
 
 if __name__ == "__main__":
-    import dt_tools.cli.demo.dt_net_demos as cli
+    import dt_tools.cli.demos.dt_net_demos as cli
     import dt_tools.logger.logging_helper as lh
     lh.configure_logger()
     cli.demo()

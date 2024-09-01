@@ -3,9 +3,23 @@ Wake-on-LAN utility
 
 This package can be used to send WOL packet to target machines via IP or Hostname.
 
+The wol function can optionally wait for the host to 'wake-up' and provide a
+status message indicating success or failure.
+
 Raises:
     ex: Invalid MAC address
     ValueError: When MAC address does not conform to expected format
+
+Example::
+
+    from dt_tools.net.wol import WOL
+
+    wol = WOL()
+    wol.send_wol_to_host(myTargetHost, wait_secs=60)
+    print(wol.status_message)
+
+
+
 """
 import socket
 import struct
@@ -18,7 +32,7 @@ import dt_tools.net.net_helper as nh
 
 # from dt_tools.console.progress_bar import ProgressBar
 
-LOGLEVEL="INFO"
+_LOGLEVEL="INFO"
 
 class WOL():
     '''
@@ -28,17 +42,13 @@ class WOL():
     Example::
 
         from dt_tools.net.wol import WOL
-        from loguru import logger as LOGGER
 
         wol = WOL()
-        try:
-            wol.send_wol_to_host('somehost', wait_secs=20)
-        except Exception as ex:
-            LOGGER.error(repr(ex))
-            raise ex    
+        wol.send_wol_to_host('somehost', wait_secs=20)
+        print(wol.status_message)
     '''
-    BROADCAST_IP = "255.255.255.255"
-    DEFAULT_PORT = 9
+    _BROADCAST_IP = "255.255.255.255"
+    _DEFAULT_PORT = 9
     
     _status_message: str = ''
 
@@ -47,36 +57,45 @@ class WOL():
 
     @property
     def status_message(cls) -> str:
+        """Return WOL request status message"""
         return cls._status_message
     
     def send_wol_to_host(cls, host_name: str, wait_secs: int = 0) -> bool:
-        '''
+        """
         Send WOL to target hostname or IP
-        host:       either hostname or IP address
-        wait_secs:  number of secs to wait for host to come online (0=no wait, fire-forget)
-        '''
+
+        Args:
+            host_name (str): host name (or IP Address).
+            wait_secs (int, optional): Number of secs to wait for host to come online. Defaults to 0.
+
+        Returns:
+            bool: True if wol packet successfully sent, else False
+        """
         return_status = False
-        if nh.is_valid_ipaddress(host_name):
-            _ip = host_name
-            _host = nh.get_hostname_from_ip(_ip)
-        else:
-            _ip = nh.get_ip_from_hostname(host_name)
-            _host = host_name
-        LOGGER.debug(f'  _ip: {_ip}  _host: {_host}')
-        if not nh.is_valid_host(host_name):
-            host_type = 'ip address' if _host == nh._UNKNOWN else 'hostname'
-            cls._status_message = f'Invalid {host_type} [{host_name}]'
-        else:
-            mac = nh.get_mac_address(_ip)
-            if mac:
-                return cls._send_wol_via_mac(mac, wait_secs=wait_secs, ip=_ip)  
-            cls._status_message = f"Unable to determine MAC address for {host_name}"
-            LOGGER.debug(cls._status_message)
-        
+        try:
+            if nh.is_valid_ipaddress(host_name):
+                _ip = host_name
+                _host = nh.get_hostname_from_ip(_ip)
+            else:
+                _ip = nh.get_ip_from_hostname(host_name)
+                _host = host_name
+            LOGGER.debug(f'  _ip: {_ip}  _host: {_host}')
+            if not nh.is_valid_host(host_name):
+                host_type = 'ip address' if _host == nh._UNKNOWN else 'hostname'
+                cls._status_message = f'Invalid {host_type} [{host_name}]'
+            else:
+                mac = nh.get_mac_address(_ip)
+                if mac:
+                    return cls.send_wol_via_mac(mac, wait_secs=wait_secs, ip=_ip)  
+                cls._status_message = f"Unable to determine MAC address for {host_name}"
+                LOGGER.debug(cls._status_message)
+        except Exception as ex:
+            cls._status_message = f'Unable to send wol packet to {hostname} - {repr(ex)}.'
+
         return return_status
     
     # === Private functions ==============================================================
-    def _send_wol_via_mac(cls, mac: str, wait_secs: int = 0, ip: str = None) -> bool:
+    def send_wol_via_mac(cls, mac: str, wait_secs: int = 0, ip: str = None) -> bool:
         macAddress = mac
         # Check macaddress format and try to compensate.
         if len(macAddress) == 12:
@@ -134,24 +153,19 @@ class WOL():
     def _wait_for_device_to_come_online(cls, ip: str, wait_secs: int) -> bool:
         is_online = nh.ping(ip)
         if not is_online:
-            # pbar = ProgressBar("Waiting for device to come online", 50, wait_secs, show_elapsed=True)
             LOGGER.debug(f'Waiting for {wait_secs} seconds for device to come online.')
             start = time.time()
             elapsed = 0
             while elapsed < wait_secs and not is_online:
-                # pbar.display_progress(elapsed)                
-                # if LOGLEVEL == "DEBUG":
-                #     print('.', end='', flush=True)
                 time.sleep(1)
                 is_online = nh.ping(ip)
                 elapsed = time.time() - start
-            # pbar.cancel_progress()
 
         return is_online
 
 
 if __name__ == "__main__":
-    lh.configure_logger(log_level=LOGLEVEL, log_format=lh.DEFAULT_CONSOLE_LOGFMT)
+    lh.configure_logger(log_level=_LOGLEVEL, log_format=lh.DEFAULT_CONSOLE_LOGFMT)
     wol = WOL()
     hostname = 'nirvana'
     LOGGER.info(f'Sending WOL to {hostname}...')
