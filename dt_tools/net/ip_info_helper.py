@@ -1,34 +1,42 @@
 """
 Helper tools for IP related information.
 
-Uses ipinfo.io API to retrive IP related information.
+**Features**:
 
-- A free **API token** is required to call the API.
-- Tokens can be aquired by going to https://ipinfo.io/signup.
-- To integrate **token** with this package, run
-  ```python -m dt_tools.cli.set_iphelper_token```  
-  or (with poetry)  
-  ```poetry run python -m dt_tools.cli.set_iphelper_token```
+    Uses **ipinfo.io** (https://ipinfo.io) API to retrive IP related information.
 
-To minimize API calls (and response time):
+        - A free **API token** is required to call the API.
+        - Tokens can be aquired by going to https://ipinfo.io/signup.
+        - See below (Setting up user Token) for integrating token with this package.
 
-- IP Data is cached locally in ~/.IpHelper/cache.json.
-- MAC Data is cached locally in ~/.IpHelper/mac_info.json.
+    To minimize API calls (and response time):
 
-For devices that are only identified by their IP and MAC address (no hostname),
-if hostname known, you may 'force' by manually updating ~/.IpHelper/mac_info.json, 
-which is keyed by mac address.
+        - IP Data is cached locally in ~/.IpHelper/cache.json.
+        - MAC Data is cached locally in ~/.IpHelper/mac_info.json.
 
-Format:
+**Setting up a User Token**:
 
-.. code-block:: python
+    - Go to https://ipinfo.io/signup
+    - Fill out form as requested
+    - Save your token key for future reference 
+    - Run set-iphelper-token
+    - Input your token when prompted.
 
-    {
-        "XX:XX:XX:XX:XX:XX": {
-            "vendor": "Ring LLC",
-            "hostname": "Ring.Doorbell"
-        },
-    }
+
+**Note**::
+
+    For devices that are only identified by their IP and MAC address (no hostname),
+    if hostname known, you may 'force' by manually updating ~/.IpHelper/mac_info.json, 
+    which is keyed by mac address.
+
+    Format:
+
+        {
+            "XX:XX:XX:XX:XX:XX": {
+                "vendor": "Ring LLC",
+                "hostname": "Ring.Doorbell"
+            },
+        }
 
 """
 
