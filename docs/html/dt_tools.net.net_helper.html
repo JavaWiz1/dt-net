@@ -21,7 +21,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="dt_tools.net.wol module" href="dt_tools.net.wol.html" />
+    <link rel="next" title="dt_tools.net.nic module" href="dt_tools.net.nic.html" />
     <link rel="prev" title="dt_tools.net.ip_info_helper module" href="dt_tools.net.ip_info_helper.html" /> 
 </head>
 
@@ -46,15 +46,12 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="dt_tools.html">dt_tools namespace</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="dt_tools.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="dt_tools.cli.html">dt_tools.cli namespace</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="dt_tools.net.html#submodules">Submodules</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.ip_info_helper.html">dt_tools.net.ip_info_helper module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dt_tools.net.net_helper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.nic.html">dt_tools.net.nic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.wifi_scanner.html">dt_tools.net.wifi_scanner module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.wol.html">dt_tools.net.wol module</a></li>
 </ul>
 </li>
 </ul>
@@ -73,7 +70,6 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="dt_tools.html">dt_tools namespace</a></li>
           <li class="breadcrumb-item"><a href="dt_tools.net.html">dt_tools.net namespace</a></li>
       <li class="breadcrumb-item active">dt_tools.net.net_helper module</li>
       <li class="wy-breadcrumbs-aside">
@@ -87,7 +83,7 @@
              
   <section id="module-dt_tools.net.net_helper">
 <span id="dt-tools-net-net-helper-module"></span><h1>dt_tools.net.net_helper module<a class="headerlink" href="#module-dt_tools.net.net_helper" title="Link to this heading"></a></h1>
-<p>Network utilities helper class.</p>
+<p>Network utilities helper module.</p>
 <p>Functions to assist with network related information and tasks.</p>
 <ul class="simple">
 <li><p>ping</p></li>
@@ -103,13 +99,6 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">LAN_Client</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vendor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#LAN_Client"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.LAN_Client" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Data class to hold Lan Client information.</p>
-<dl class="simple">
-<dt>Members:</dt><dd><p>ip: IP address.
-mac: MAC address.
-hostname: Hostname
-vendor: MAC vendor.</p>
-</dd>
-</dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.LAN_Client.hostname">
 <span class="sig-name descname"><span class="pre">hostname</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#dt_tools.net.net_helper.LAN_Client.hostname" title="Link to this definition"></a></dt>
@@ -118,12 +107,14 @@ vendor: MAC vendor.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.LAN_Client.ip">
 <span class="sig-name descname"><span class="pre">ip</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#dt_tools.net.net_helper.LAN_Client.ip" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Device IP address</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.LAN_Client.mac">
 <span class="sig-name descname"><span class="pre">mac</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#dt_tools.net.net_helper.LAN_Client.mac" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Device MAC address</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.LAN_Client.to_dict">
@@ -194,10 +185,6 @@ vendor: MAC vendor.</p>
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_lan_clients_ARP_broadcast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_mac_vendor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#dt_tools.net.net_helper.LAN_Client" title="dt_tools.net.net_helper.LAN_Client"><span class="pre">LAN_Client</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_lan_clients_ARP_broadcast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_lan_clients_ARP_broadcast" title="Link to this definition"></a></dt>
 <dd><p>Retrieve a list of LAN_Clients from the local network.</p>
 <p>The list of clients are retrieved via a Scapy ARP broadcast</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>including hostname and/or vendor will slow down process due to additional calls</p>
-</div>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -212,6 +199,10 @@ vendor: MAC vendor.</p>
 <dd class="field-odd"><p>A list of <a class="reference internal" href="#dt_tools.net.net_helper.LAN_Client" title="dt_tools.net.net_helper.LAN_Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">LAN_Client</span></code></a> entries</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>including hostname and/or vendor will slow down process due to additional calls</p>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -219,10 +210,6 @@ vendor: MAC vendor.</p>
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_lan_clients_from_ARP_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_hostname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_mac_vendor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#dt_tools.net.net_helper.LAN_Client" title="dt_tools.net.net_helper.LAN_Client"><span class="pre">LAN_Client</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_lan_clients_from_ARP_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_lan_clients_from_ARP_cache" title="Link to this definition"></a></dt>
 <dd><p>Retrieve a list of LAN_Clients from the local network.</p>
 <p>The list of clients are retrieved via the ARP cache.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>including hostname and/or vendor will slow down process due to additional calls</p>
-</div>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -234,6 +221,10 @@ vendor: MAC vendor.</p>
 <dd class="field-even"><p>A list of <a class="reference internal" href="#dt_tools.net.net_helper.LAN_Client" title="dt_tools.net.net_helper.LAN_Client"><code class="xref py py-class docutils literal notranslate"><span class="pre">LAN_Client</span></code></a> entries</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>including hostname and/or vendor will slow down process due to additional calls</p>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -249,15 +240,31 @@ vendor: MAC vendor.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.get_mac_address">
-<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_mac_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hostname_or_ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_mac_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_mac_address" title="Link to this definition"></a></dt>
-<dd><p>Get MAC address of target Hostname (or IP).</p>
-<p>Process uses ARP to discover data.</p>
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_mac_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_mac_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_mac_address" title="Link to this definition"></a></dt>
+<dd><p>Get mac address for specified IP</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MAC address or None if not found.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.get_port_name">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_port_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_port_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_port_name" title="Link to this definition"></a></dt>
+<dd><p>Retrieve (common) port name if defined else none.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>hostname_or_ip</strong> – target host</p>
+<dd class="field-odd"><p><strong>port</strong> (<em>int</em>) – port number</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>MAC address if found, else None</p>
+<dd class="field-even"><p>Port name if found, else none</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 </dd></dl>
@@ -279,12 +286,21 @@ vendor: MAC vendor.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.get_wan_ip">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_wan_ip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_wan_ip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_wan_ip" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Get the WAN (ie. Internet) IP address for this device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>WAN IP or ‘Unknown’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_ipv4_address">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">is_ipv4_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#is_ipv4_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.is_ipv4_address" title="Link to this definition"></a></dt>
-<dd><p>Valid IPv4 address in dotted-quad notation.</p>
+<dd><p>Validate IPv4 address in dotted-quad notation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>ip_address</strong> – (str) in format 999.999.999.999</p>
@@ -304,7 +320,19 @@ vendor: MAC vendor.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_ipv6_address">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">is_ipv6_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#is_ipv6_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.is_ipv6_address" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Validate IPv6 address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ip</strong> (<em>str</em>) – IPv6 formatted address.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if valid else False.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_port_open">
@@ -347,7 +375,19 @@ vendor: MAC vendor.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_valid_ipaddress">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">is_valid_ipaddress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#is_valid_ipaddress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.is_valid_ipaddress" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Check if IP is valid address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ip</strong> (<em>str</em>) – IP address.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if valid else False.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.ping">
@@ -373,7 +413,7 @@ vendor: MAC vendor.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="dt_tools.net.ip_info_helper.html" class="btn btn-neutral float-left" title="dt_tools.net.ip_info_helper module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="dt_tools.net.wol.html" class="btn btn-neutral float-right" title="dt_tools.net.wol module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="dt_tools.net.nic.html" class="btn btn-neutral float-right" title="dt_tools.net.nic module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

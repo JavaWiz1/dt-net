@@ -36,7 +36,7 @@ Helper tools for IP related information.
     You may assign a hostname by manually updating ~/.IpHelper/mac_info.json, 
     which is keyed by mac address.
 
-    Format:
+    Format::
 
         {
             "XX:XX:XX:XX:XX:XX": {
