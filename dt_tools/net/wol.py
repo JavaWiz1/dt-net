@@ -1,7 +1,7 @@
 """
-Wake-on-LAN utility
+Wake-on-LAN utility class
 
-This package can be used to send WOL packet to target machines via IP or Hostname.
+This class can be used to send WOL packet to target machines via IP or Hostname.
 
 The wol function can optionally wait for the host to 'wake-up' and provide a
 status message indicating success or failure.

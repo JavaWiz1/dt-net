@@ -1,5 +1,5 @@
 """
-Network utilities helper class.
+Network utilities helper module.
 
 Functions to assist with network related information and tasks.
 
