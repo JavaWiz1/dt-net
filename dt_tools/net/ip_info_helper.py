@@ -18,15 +18,22 @@ Helper tools for IP related information.
 
     - Go to https://ipinfo.io/signup
     - Fill out form as requested
-    - Save your token key for future reference 
-    - Run set-iphelper-token
-    - Input your token when prompted.
+    - Capture your token key for future reference 
+    - Save your token using set-iphelper-token utility (dt-cli-tools) or manually.
+    
+    **Saving token manually**
+
+        - Open an editor and load/create: ~/.IpHelper/ip_token_info.json.
+        - Create one line in the file as: {"token": "xxxxxxxxxxxxxx"}
+            - Replace the x's with the token supplied by ipinfo.io.
+        - Save the file.
 
 
-**Note**::
 
-    For devices that are only identified by their IP and MAC address (no hostname),
-    if hostname known, you may 'force' by manually updating ~/.IpHelper/mac_info.json, 
+**Note**:
+
+    For devices that are only identified by their IP and MAC address (ie. no hostname identified),
+    You may assign a hostname by manually updating ~/.IpHelper/mac_info.json, 
     which is keyed by mac address.
 
     Format:
@@ -37,6 +44,8 @@ Helper tools for IP related information.
                 "hostname": "Ring.Doorbell"
             },
         }
+
+    One or both of the keys (vendor/hostname) must be supplied.
 
 """
 
