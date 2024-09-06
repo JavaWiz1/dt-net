@@ -60,7 +60,7 @@ pip install dt-net [--user]
 A demo cli has been included to show how these modules can be used.  The demo showcases how to use the
 many functions in each of the modules.
 
-See [dt_tools.cli.demos.dt_net_demos.py](https://github.com/JavaWiz1/dt-console/blob/develop/dt_tools/cli/demos/dt_net_demos.py) for detailed demo examples (runnable demo)
+See [dt_tools.cli.demos.dt_net_demos.py](https://github.com/JavaWiz1/dt-net/blob/develop/dt_tools/cli/demos/dt_net_demos.py) for detailed demo examples (runnable demo)
 
 To run the demo type:
 ```bash
