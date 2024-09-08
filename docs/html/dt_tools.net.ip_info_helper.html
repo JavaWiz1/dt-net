@@ -46,15 +46,12 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="dt_tools.html">dt_tools namespace</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="dt_tools.html#subpackages">Subpackages</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="dt_tools.cli.html">dt_tools.cli namespace</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a><ul class="current">
-<li class="toctree-l4 current"><a class="reference internal" href="dt_tools.net.html#submodules">Submodules</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dt_tools.net.ip_info_helper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.net_helper.html">dt_tools.net.net_helper module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.nic.html">dt_tools.net.nic module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.wifi_scanner.html">dt_tools.net.wifi_scanner module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.net.wol.html">dt_tools.net.wol module</a></li>
 </ul>
 </li>
 </ul>
@@ -73,7 +70,6 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="dt_tools.html">dt_tools namespace</a></li>
           <li class="breadcrumb-item"><a href="dt_tools.net.html">dt_tools.net namespace</a></li>
       <li class="breadcrumb-item active">dt_tools.net.ip_info_helper module</li>
       <li class="wy-breadcrumbs-aside">
@@ -88,56 +84,98 @@
   <section id="module-dt_tools.net.ip_info_helper">
 <span id="dt-tools-net-ip-info-helper-module"></span><h1>dt_tools.net.ip_info_helper module<a class="headerlink" href="#module-dt_tools.net.ip_info_helper" title="Link to this heading"></a></h1>
 <p>Helper tools for IP related information.</p>
-<p>Uses ipinfo.io API to retrive IP related information.
-- A free <strong>API token</strong> is required to call the API
-- Tokens can be aquired by going to <a class="reference external" href="https://ipinfo.io/signup">https://ipinfo.io/signup</a>
-- To integrate <strong>token</strong> with this package, run
-<code class="docutils literal notranslate"><span class="pre">`python</span> <span class="pre">-m</span> <span class="pre">dt_tools.cli.set_iphelper_token`</span></code>
-or (with poetry)
-<code class="docutils literal notranslate"><span class="pre">`poetry</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">dt_tools.cli.set_iphelper_token`</span></code></p>
-<p>To minimize API calls (and response time):
-- IP Data is cached locally in ~/.IpHelper/cache.json
-- MAC Data is cached locally in ~/.IpHelper/mac_info.json</p>
+<p><strong>Features</strong>:</p>
+<blockquote>
+<div><p>Uses <strong>ipinfo.io</strong> (<a class="reference external" href="https://ipinfo.io">https://ipinfo.io</a>) API to retrive IP related information.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>A free <strong>API token</strong> is required to call the API.</p></li>
+<li><p>Tokens can be aquired by going to <a class="reference external" href="https://ipinfo.io/signup">https://ipinfo.io/signup</a>.</p></li>
+<li><p>See below (Setting up user Token) for integrating token with this package.</p></li>
+</ul>
+</div></blockquote>
+<p>To minimize API calls (and response time):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>IP Data is cached locally in ~/.IpHelper/cache.json.</p></li>
+<li><p>MAC Data is cached locally in ~/.IpHelper/mac_info.json.</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Setting up a User Token</strong>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Go to <a class="reference external" href="https://ipinfo.io/signup">https://ipinfo.io/signup</a></p></li>
+<li><p>Fill out form as requested</p></li>
+<li><p>Capture your token key for future reference</p></li>
+<li><p>Save your token using set-iphelper-token utility (dt-cli-tools) or manually.</p></li>
+</ul>
+<p><strong>Saving token manually</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Open an editor and load/create: ~/.IpHelper/ip_token_info.json.</p></li>
+<li><dl class="simple">
+<dt>Create one line in the file as: {“token”: “xxxxxxxxxxxxxx”}</dt><dd><ul>
+<li><p>Replace the x’s with the token supplied by ipinfo.io.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Save the file.</p></li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p><strong>Note</strong>:</p>
+<blockquote>
+<div><p>For devices that are only identified by their IP and MAC address (ie. no hostname identified),
+You may assign a hostname by manually updating ~/.IpHelper/mac_info.json,
+which is keyed by mac address.</p>
+<p>Format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;XX:XX:XX:XX:XX:XX&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;vendor&quot;</span><span class="p">:</span> <span class="s2">&quot;Ring LLC&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;hostname&quot;</span><span class="p">:</span> <span class="s2">&quot;Ring.Doorbell&quot;</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>One or both of the keys (vendor/hostname) must be supplied.</p>
+</div></blockquote>
 <dl class="py class">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dt_tools.net.ip_info_helper.</span></span><span class="sig-name descname"><span class="pre">IpHelper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">purge_stale_entries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>IP Information helper class.</p>
 <p>This class provides information about an IP address.</p>
-<p>It interfaces with ipinfo.io .
-- Requires a user token which is free.
-- See ‘setting up user token’ in docs.</p>
-<dl class="simple">
-<dt>In order to minimize API calls and improve performance, a cache</dt><dd><p>for IP and MAC information is created and stored locally.</p>
-</dd>
-</dl>
+<p>It interfaces with the free <strong>ipinfo.io</strong> site.  The ipinfo.io site
+requires a user token which is free.</p>
+<ul class="simple">
+<li><p>See ‘setting up user token’ in docs for information on aquiring and setting up token.</p></li>
+</ul>
+<p>In order to minimize API calls and improve performance, a cache
+for IP and MAC information is created and stored locally.</p>
 <p>The local data will be refresed if it is &gt; 48 hours old. It can also
 be manually refreshed/cleared from cache.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><dl class="simple">
-<dt>ip<span class="classifier">xxx.xxx.xxx.xxx</span></dt><dd><p>hostname   : hostname.domain
-city       : Atlanta
-region     : Georgia
-country    : US
-loc        : 33.7490,-84.3880
-org        : XXXXXXXXXXXX
-postal     : 30302
-timezone   : America/New_York</p>
-</dd>
-<dt>For LAN IPs:</dt><dd><p>ip         : xxx.xxx.xxx.xxx
-hostname   : hostname.domain[or workgroup]
-bogon      : True
-mac        : XX:XX:XX:XX:XX:XX
-vendor     : Raspberry Pi Trading Ltd</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>For WAN IPs</p>
-</dd>
-</dl>
+<p>The class provides the following information:</p>
+<p>For WAN IPs:</p>
+<ul class="simple">
+<li><p>ip         : xxx.xxx.xxx.xxx</p></li>
+<li><p>hostname   : hostname.domain</p></li>
+<li><p>city       : Atlanta</p></li>
+<li><p>region     : Georgia</p></li>
+<li><p>country    : US</p></li>
+<li><p>loc        : 33.7490,-84.3880</p></li>
+<li><p>org        : XXXXXXXXXXXX</p></li>
+<li><p>postal     : 30302</p></li>
+<li><p>timezone   : America/New_York</p></li>
+</ul>
+<p>For LAN IPs:</p>
+<ul class="simple">
+<li><p>ip         : xxx.xxx.xxx.xxx</p></li>
+<li><p>hostname   : hostname.domain[or workgroup]</p></li>
+<li><p>bogon      : True (identifies this as a local IP)</p></li>
+<li><p>mac        : XX:XX:XX:XX:XX:XX</p></li>
+<li><p>vendor     : Raspberry Pi Trading Ltd</p></li>
+</ul>
 <dl class="py property">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.cache_dict">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cache_dict</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.cache_dict" title="Link to this definition"></a></dt>
@@ -146,12 +184,15 @@ vendor     : Raspberry Pi Trading Ltd</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.clear_cache">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clear_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.clear_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.clear_cache" title="Link to this definition"></a></dt>
-<dd><p>Clear the IP Info cache.</p>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clear_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip_address</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.clear_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.clear_cache" title="Link to this definition"></a></dt>
+<dd><p>Clear the IP Info cache or cache entry.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Keyword Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>(</strong><strong>default</strong> (<em>ip_address -- IP address to be cleared</em>) – {None})
 If None, all entries will be removed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>int – Number of entries removed.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -159,13 +200,13 @@ If None, all entries will be removed.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.find_in_cache">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find_in_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">search_token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.find_in_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.find_in_cache" title="Link to this definition"></a></dt>
-<dd><p>TODO: NEEDS Work</p>
+<dd><p>Search each cache entry for supplied search string.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>search_token</strong> – _description_</p>
+<dd class="field-odd"><p><strong>search_token</strong> – Text to search for.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>_description_</p>
+<dd class="field-even"><p>A list of IPs (str) whose data containes the search_token.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -190,7 +231,16 @@ If None, all entries will be removed.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.get_wan_ip_info">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_wan_ip_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.get_wan_ip_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.get_wan_ip_info" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Return the WAN (ie. Internet) address for this device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ip_info entry and return code.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[dict, int]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.is_cached">
@@ -208,12 +258,14 @@ If None, all entries will be removed.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="dt_tools.net.ip_info_helper.IpHelper.list_cache">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.list_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.list_cache" title="Link to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_all_fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dt_tools/net/ip_info_helper.html#IpHelper.list_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.ip_info_helper.IpHelper.list_cache" title="Link to this definition"></a></dt>
 <dd><p>Print formatted contents of cache to console.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Keyword Arguments<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ip</strong> – Target IP Address (default: {None}).
-If None, all entries will be output.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ip</strong> (<em>str</em><em>, </em><em>optional</em>) – Target IP address. Defaults to None.</p></li>
+<li><p><strong>show_all_fields</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include private (_) fields. Defaults to True.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>

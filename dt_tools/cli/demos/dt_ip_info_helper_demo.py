@@ -8,8 +8,8 @@ from dt_tools.net.ip_info_helper import IpHelper
 
 def demo():
     ConsoleHelper.print('')
-    ConsoleHelper.print_line_seperator('', 80)
-    ConsoleHelper.print_line_seperator('dt_ip_info_helper_demo', 80)
+    ConsoleHelper.print_line_separator('', 80)
+    ConsoleHelper.print_line_separator('dt_ip_info_helper_demo', 80)
     ConsoleHelper.print('')
 
     local_ip = helper.get_local_ip()
@@ -20,7 +20,7 @@ def demo():
     for ip_name, ip in ip_dict.items():
         ip_dict = IpHelper.get_ip_info(ip)
         ConsoleHelper.print('')
-        ConsoleHelper.print_line_seperator(f'{ip_name} Info', 40)
+        ConsoleHelper.print_line_separator(f'{ip_name} Info', 40)
         if 'error' in ip_dict.keys():
             ConsoleHelper.print(f'IP Address      : {ConsoleHelper.cwrap(ip, ColorFG.YELLOW)}')
         for key, val in ip_dict.items():

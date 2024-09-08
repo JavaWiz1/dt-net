@@ -26,6 +26,7 @@ Features include:
         <li>Lookup routines: ip to hostname, ip to mac,...</li>
         <li>LAN Scan: list of LAN clients.</li>
     </ul>
+    <li><b>wifi_scanner</b> - Identify wifi access points and their attributes.</li>
     <li><b>wol</b> - Send WOL packets to target hosts</li>
 </ul>
 
@@ -49,7 +50,7 @@ with ONLY production packages (no sphinx):
 poetry install --without dev
 ```
 
-### use the package manager [pip](https://pip.pypa.io/en/stable/) to install dt-console.
+### use the package manager [pip](https://pip.pypa.io/en/stable/) to install dt-net.
 
 ```bash
 pip install dt-net [--user]
@@ -59,118 +60,171 @@ pip install dt-net [--user]
 A demo cli has been included to show how these modules can be used.  The demo showcases how to use the
 many functions in each of the modules.
 
-See [dt_tools.cli.dt_net_demos.py](https://github.com/JavaWiz1/dt-console/blob/develop/dt_tools/cli/dt_net_demos.py) for detailed demo examples (runnable demo)
+See [dt_tools.cli.demos.dt_net_demos.py](https://github.com/JavaWiz1/dt-net/blob/develop/dt_tools/cli/demos/dt_net_demos.py) for detailed demo examples (runnable demo)
 
 To run the demo type:
 ```bash
-python -m dt_tools.cli.dt_net_demos
+python -m dt_tools.cli.demo.dt_net_demos
 
 # or if via source (and poetry)
-poetry run python -m dt_tools.cli.dt_net_demos
+poetry run python -m dt_tools.cli.demos.dt_net_demos
 ```
 
-Developer package documentation contains details on all classes and supporting code (i.e. constant namespaces and enums) use for method calls.  Docs can be found [here](https://htmlpreview.github.io/?https://github.com/JavaWiz1/dt-console/blob/develop/docs/html/index.html).
+Developer package documentation contains details on all classes and supporting code (i.e. constant namespaces and enums) use for method calls.  Docs can be found [here](https://htmlpreview.github.io/?https://github.com/JavaWiz1/dt-net/blob/develop/docs/html/index.html).
 
 
-### Main classes/modules Overview
+## Main classes/modules Overview
 
-#### ConsoleHelper
-ConsoleHelper provides methods for managing the console windows.
+### IpHelper (class)
+This class provides information about an IP address.  
+
+It interfaces with the free **ipinfo.io** site.  The ipinfo.io site
+requires a user token which is free.
+
+- See 'setting up user token' in docs for information on aquiring and setting up token.
+
+In order to minimize API calls and improve performance, a cache
+for IP and MAC information is created and stored locally.
+    
+The local data will be refresed if it is > 48 hours old. It can also
+be manually refreshed/cleared from cache.
+
+The class provides the following information:
+
+For WAN IPs:
+
+- ip         : xxx.xxx.xxx.xxx
+- hostname   : hostname.domain
+- city       : Atlanta
+- region     : Georgia
+- country    : US
+- loc        : 33.7490,-84.3880
+- org        : XXXXXXXXXXXX
+- postal     : 30302
+- timezone   : America/New_York
+
+For LAN IPs:
+
+- ip         : xxx.xxx.xxx.xxx
+- hostname   : hostname.domain[or workgroup]
+- bogon      : True (identifies this as a local IP)
+- mac        : XX:XX:XX:XX:XX:XX
+- vendor     : Raspberry Pi Trading Ltd
 
 ```python
-    from dt_tools.console.console_helper import ConsoleHelper
+    from dt_tools.net.ip_info_helper import IpHelper as helper
     import time
 
-    console.clear_screen(cursor_home=True)
+    local_ip = helper.get_local_ip()
+    wan_ip = helper.get_wan_ip()
+    google_ip = helper.get_ip_from_hostname('google.com')
 
-    console_size = console.get_console_size()
-    row, col = console.cursor_current_position()
-    print(f'Console size: {console_size}, cur pos: {row},{col}')
+    ip_dict = {"Local IP": local_ip, "WAN IP": wan_ip, "Google IP": google_ip, "Bad Address": "999.999.999.999"}
+    for ip_name, ip in ip_dict.items():
+        ip_dict = IpHelper.get_ip_info(ip)
+        print('-----------------------------------------------')
+        if 'error' in ip_dict.keys():
+            print(f'IP Address      : {ip} ERROR')
+        for key, val in ip_dict.items():
+            print(f'{key:15} : {val}')
+        time.sleep(2)
 
-    console.print_at(row=3, col=5, msg="Here we are at row 3, column 5", eol='\n\n')
-    time.sleep(.5)
-
-    blue = console.cwrap('blue', cc.CBLUE)
-    brown = console.cwrap('brown', cc.CBEIGE)
-    green = console.cwrap('green', cc.CGREEN)
-    text = f"The {blue} skies and the {brown} bear look wonderful in the {green} forest!"
-    print(text)
-
-    row, col = console.cursor_current_position()
-    print(f'         at ({row},{col})', flush=True)
-    time.sleep(2)
-    console.print_at(row,col,'Finished')
 ```
 
-#### ConsoleInputHelper
-ConsoleInputHelper provides a customizable input prompt.
+---
+
+### net_helper.py (module)
+
+Network utilities helper module.
+
+Functions to assist with network related information and tasks.
+
+- ping
+- local IP address
+- get ip for given hostname
+- get hostname for given ip
+- get mac address for given hostname or ip
+- get mac vendor
+- get local client info on LAN
+
+---
+
+### WiFiAdapterInfo (class) / nic.py (module)
+
+Class and function to identify and report on Network cards (nic) and specifically WiFi cards and capabilities.
+
+Information includes:
+
+    - Adapter Name
+    - MAC address
+    - SSID/BSSIDs
+    - Radio type
+    - Authentication method
+    - Cipher used for encryption
+    - Frequence Band of radio
+    - Broadcast channel
+    - Speed Transmit/Recieve
+    - Signal strength
+  
+---
+
+### wifi_scanner.py (module)
+
+Scan for local access points and capture AP information.
+
+Module contains classes -
+
+- **SSID**: WiFi Network id information.
+- **BSSID**: Unique access point id information.
+- **AccessPoint**: Defines the WiFi network SSID and assocated BSSID's.
+- **Scanners**: Scanners for Windows and Linux that gather WiFi network information.
+
 
 ```python
-    from dt_tools.console.console_helper import ConsoleInputHelper
 
-    console_input = ConsoleInputHelper()
+    from dt_tools.os.os_helper import OSHelper
+    import dt_tools.net.nic as nic_helper
 
-    resp = console_input.get_input_with_timeout(prompt='Do you want to continue (y/n) > ',
-                                                valid_responses=console_input.YES_NO_RESPONSE,
-                                                default='y',
-                                                timeout_secs=5)
-    print(f'  returns: {resp}')
-
+    wifi_adapter_list = nic_helper.identify_wifi_adapters()
+    if len(wifi_adapter_list) == 0:
+        print('No WiFi adapters available.')
+    else:
+        scanner = None
+        nic_name = wifi_adapter_list[0]
+        if OSHelper.is_windows():
+            scanner = WindowsWiFiScanner(nic_name)
+        elif OSHelper.is_linux():
+            scanner = IwlistWiFiScanner(nic_name)
+        else:
+            print('un-supported OS.')
+        if scanner is not None:
+            ap_list = scanner.scan_for_access_points()
+            print(f'{len(ap_list)} access points identified.')
+            names = [x.ssid.name for x in ap_list]
+            print(','.join(names))
 ```
 
-#### MessageBox
-Message box implements Alert, Confirmation, Input Prompt, Password Prompt message boxes.
+---
+
+### WOL (class)
+
+Wake-on-LAN utility class
+
+This class can be used to send WOL packet to target machines via IP or Hostname.
+
+The wol function can optionally wait for the host to 'wake-up' and provide a
+status message indicating success or failure.
+
 
 ```python
-    import dt_tools.console.msgbox as msgbox
 
-    resp = msgbox.alert(text='This is an alert box', title='ALERT no timeout')
-    print(f'  mxgbox returns: {resp}')
+    from dt_tools.net.wol import WOL
 
-    resp = msgbox.alert(text='This is an alert box', title='ALERT w/Timeout', timeout=3000)
-    print(f'  mxgbox returns: {resp}')
+    wol = WOL()
+    wol.send_wol_to_host(myTargetHost, wait_secs=60)
+    print(wol.status_message)
 
 ```
-
-#### ProgressBar
-ProgressBar is an easy to use, customizable console ProgressBar which displays percentage complete and elapsed time.
-
-```python
-    from dt_tools.console.progress_bar import ProgressBar
-    import time
-
-    print('Progress bar...')
-    pbar = ProgressBar(caption="Test bar 1", bar_length=40, max_increments=50, show_elapsed=False)
-    for incr in range(1,51):
-        pbar.display_progress(incr, f'incr [{incr}]')
-        time.sleep(.15)
-
-    print('\nProgress bar with elapsed time...')
-    pbar = ProgressBar(caption="Test bar 2", bar_length=40, max_increments=50, show_elapsed=True)
-    for incr in range(1,51):
-        pbar.display_progress(incr, f'incr [{incr}]')
-        time.sleep(.15)
-```
-
-#### Spinner
-Spinner is an easy to use, customizable console Spinner control which displays spinning icon and elapsed time.
-
-```python
-    from dt_tools.console.spinner import Spinner, SpinnerType
-    import time
-
-    # Example to display all spinner types for approx 5 sec. apiece
-    for spinner_type in SpinnerType:
-        spinner = Spinner(caption=spinner_type, spinner=spinner_type, show_elapsed=True)
-        spinner.start_spinner()
-
-        # Do long task...
-        for cnt in range(1,20):
-            time.sleep(.25)
-
-        spinner.stop_spinner()
-```
-
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

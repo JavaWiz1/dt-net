@@ -1,8 +1,7 @@
 """
-Network utilities helper class.
+Network utilities helper module.
 
 Functions to assist with network related information and tasks.
-
 
 - ping
 - local IP address
@@ -102,16 +101,11 @@ class LAN_Client():
     """
     Data class to hold Lan Client information.
 
-    Members:
-        ip: IP address.
-        mac: MAC address.
-        hostname: Hostname
-        vendor: MAC vendor.
     """
-    ip: str
-    mac: str
-    hostname: str = None
-    vendor: str = None
+    ip: str #: Device IP address
+    mac: str #: Device MAC address
+    hostname: str = None # Device hostname
+    vendor: str = None # NIC Vendor
 
     def to_dict(self):
         """
@@ -161,11 +155,20 @@ def _get_ipaddress_obj(ip: str) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Ad
     return ip_obj
 
 def is_valid_ipaddress(ip: str) -> bool:
+    """
+    Check if IP is valid address.
+
+    Args:
+        ip (str): IP address.
+
+    Returns:
+        bool: True if valid else False.
+    """
     return _get_ipaddress_obj(ip) is not None
 
 def is_ipv4_address(ip: str) -> bool:
     """
-    Valid IPv4 address in dotted-quad notation.
+    Validate IPv4 address in dotted-quad notation.
     
     Args:
         ip_address: (str) in format 999.999.999.999
@@ -183,6 +186,15 @@ def is_ipv4_address(ip: str) -> bool:
     return ip_obj is not None and isinstance(ip_obj, ipaddress.IPv4Address)
 
 def is_ipv6_address(ip: str) -> bool:
+    """
+    Validate IPv6 address.
+
+    Args:
+        ip (str): IPv6 formatted address.
+
+    Returns:
+        bool: True if valid else False.
+    """
     ip_obj = _get_ipaddress_obj(ip)
     return ip_obj is not None and isinstance(ip_obj, ipaddress.IPv6Address)
 
@@ -312,14 +324,15 @@ def get_ip_from_mac(mac: str) -> str:
     # arp_cmd = cls._get_arp_cmd()
     process_rslt = subprocess.run(_arp_entries_command(), capture_output=True)
     rslt = process_rslt.stdout.decode('utf-8').splitlines()
-    LOGGER.critical(f'MAC: {mac}\nRESULT: {rslt}')
+    LOGGER.debug(f'MAC: {mac}\nRESULT: {rslt}')
     arp = [token for token in rslt if mac in token]
-    LOGGER.critical(f'  arp line: {arp}')
+    arp_line = arp[0]
+    LOGGER.debug(f'  arp line: {arp}')
     ip = None
     if platform.system() == "Windows":
-        ip = " ".join(arp.split()).split()[0]
+        ip = " ".join(arp_line.split()).split()[0]
     else:
-        ip = " ".join(arp.split()).split()[2]
+        ip = " ".join(arp_line.split()).split()[2]
     
     if ip is not None:
         LOGGER.debug(f'  MAC {mac} resolves to {ip}')
@@ -328,6 +341,12 @@ def get_ip_from_mac(mac: str) -> str:
     raise ValueError(f'Can not determine IP for mac {mac}')
 
 def get_wan_ip() -> str:
+    """
+    Get the WAN (ie. Internet) IP address for this device.
+
+    Returns:
+        str: WAN IP or 'Unknown'
+    """
     from dt_tools.net.ip_info_helper import IpHelper
 
     ip_info, _ = IpHelper.get_wan_ip_info()
@@ -361,39 +380,17 @@ def get_mac_address(ip: str) -> str:
     Returns:
         str: MAC address or None if not found.
     """
-    from scapy.layers.l2 import getmacbyip
-    mac = getmacbyip(ip)
+    
+    if ip == get_local_ip():
+        import uuid
+        mac = (':'.join(['{:02x}'.format((uuid.getnode() >> ele) & 0xff) for ele in range(0,8*6,8)][::-1]))    
+    else:
+        from scapy.layers.l2 import getmacbyip
+        mac = getmacbyip(ip)
+    
     if mac is not None:
         mac = str(mac).upper()
     return mac
-
-# def get_mac_address(hostname_or_ip: str, via_ARP_broadcast: bool = False) -> str:
-#     """
-#     Get MAC address of target Hostname (or IP).
-
-#     Process uses ARP to discover data.
-
-#     Arguments:
-#         hostname_or_ip: target host
-
-#     Returns:
-#         MAC address if found, else None
-#     """
-#     # local_ip = get_local_ip()
-#     if is_ipv4_address(hostname_or_ip):
-#         ip = hostname_or_ip
-#     else:
-#         ip = get_ip_from_hostname(hostname_or_ip)
-#         if len(ip) == 0:
-#             return None
-        
-#     mac = None
-#     lan_list: List[LAN_Client] = get_lan_clients_ARP_broadcast() if via_ARP_broadcast else get_lan_clients_from_ARP_cache()
-#     for entry in lan_list:
-#         if entry.ip == ip:
-#             mac = entry.mac    
-
-#     return mac
 
 @logger_wraps(level="TRACE")
 def get_vendor_from_mac(mac: str) -> str:
@@ -409,44 +406,36 @@ def get_vendor_from_mac(mac: str) -> str:
     if mac is None:
         raise ValueError('MAC address cannot be None.')
     vendor = _UNKNOWN
-    urls = [ f'https://api.maclookup.app/v2/macs/{mac}', f'https://api.macvendors.com/{mac}']
+    # url = f'https://api.maclookup.app/v2/macs/{mac}'
+    url = f'https://api.macvendors.com/{mac}'
     retry = 0
     RETRY_MAX = 15
     try:
-        LOGGER.warning(f'{mac} - vendor lookup')
         while retry < RETRY_MAX and vendor == _UNKNOWN:
-            url = urls[0]
             resp = requests.get(url)
             if resp.status_code == 200:
-                vendor = resp.json().get('company', '')      # api.maclookup
-                LOGGER.info(f'  {url} - {vendor}')
+                # vendor = resp.json()['company']      # api.maclookup
+                vendor = resp.text # api.macvendors.com
                 if len(vendor) == 0:
-                    url = urls[1]
-                    resp = requests.get(url)
-                    vendor = resp.text # api.macvendors.com
-                    if 'Not Found' in vendor:
-                        vendor = ''
-                    LOGGER.info(f'  {url} - {vendor}')
-                if len(vendor) == 0:
-                    LOGGER.warning(f'  ERROR: Vendor not found, {url}, {resp.text}')
+                    LOGGER.debug(f'  ERROR: Vendor not found, {url}, {resp.text}')
                     vendor = "Not Found"
-                elif retry > 0:
-                    LOGGER.success(f'  SUCCESS. Retry succeeded, {vendor}, {url}')    
+                if retry > 0:
+                    LOGGER.debug(f'  SUCCESS. Retry succeeded, {vendor}, {url}')    
             elif resp.status_code == 429:  # You've been throttled
                 retry += 1
                 sleep_secs = random.uniform(0.5,3.5)
-                LOGGER.warning(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
+                LOGGER.debug(f'  WARNING: Throttle ({mac}) [{retry}]... {sleep_secs:1.2} {url}')
                 sleep(sleep_secs) # Throttle (limit = 2 requests/second)
             else:
-                LOGGER.error(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
+                LOGGER.debug(f'  ERROR: MAC Lookup resp: {resp.status_code}, {url}, {resp.text}')
                 retry = RETRY_MAX
 
     except Exception as ex:
-        LOGGER.error(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
+        LOGGER.debug(f'  ERROR: MAC Lookup error {url}: {repr(ex)}')
         vendor = _UNKNOWN
         
     if vendor == _UNKNOWN:
-        LOGGER.warning(f'  ERROR: Unable to resolve, {mac}')
+        LOGGER.debug(f'  ERROR: Unable to resolve, {mac}')
 
     return vendor
 
@@ -459,9 +448,6 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
 
     The list of clients are retrieved via a Scapy ARP broadcast
 
-    Note:
-        including hostname and/or vendor will slow down process due to additional calls
-
     Keyword Arguments:
         include_hostname: Include hostname information (default: {False})
         include_mac_vendor: Include MAC vendor name (default: {False})
@@ -472,6 +458,9 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
     Returns:
         A list of :class:`~LAN_Client` entries 
     
+    Note:
+        including hostname and/or vendor will slow down process due to additional calls
+
     """
     if OSHelper.is_linux() and not OSHelper.is_linux_root():
         LOGGER.critical('You must be root on linux for ARP_Broadcast to work')
@@ -505,15 +494,16 @@ def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_v
 
     The list of clients are retrieved via the ARP cache.
 
-    Note:
-        including hostname and/or vendor will slow down process due to additional calls
-
     Keyword Arguments:
         include_hostname: Include hostname information (default: {False})
         include_mac_vendor: Include MAC vendor name (default: {False})
 
     Returns:
         A list of :class:`~LAN_Client` entries 
+
+    Note:
+        including hostname and/or vendor will slow down process due to additional calls
+
     """
     arp_cmd = ["arp", "-a"] if OSHelper().is_windows() else ["arp", "-n"]
     LOGGER.debug(f'ARP command: {arp_cmd}')
@@ -576,9 +566,9 @@ def _trackable_ip(ip: str) -> bool:
     
     return trackable
 
-def _get_hostname_and_or_vendor(client_list: List[LAN_Client], include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
+@logger_wraps(level="TRACE")
+def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
 
-    LOGGER.trace('Entering - get_hostname_and_or_vendor()')
     updated_list: List[LAN_Client] = []
     from dt_tools.net.ip_info_helper import IpHelper
     ip_info = IpHelper()
@@ -590,10 +580,8 @@ def _get_hostname_and_or_vendor(client_list: List[LAN_Client], include_hostname:
             arp_entry.hostname = ip_data.get('hostname')
         if include_mac_vendor:
             arp_entry.vendor = ip_data.get('vendor')
-
         updated_list.append(arp_entry)
 
-    LOGGER.trace('Exiting - get_hostname_and_or_vendor()')
     return updated_list
 
 def _get_target_protocol_address_pdst() -> str:
@@ -655,7 +643,7 @@ def _mac_separator() -> str:
 
 
 if __name__ == "__main__":
-    import dt_tools.cli.dt_net_demos as cli
+    import dt_tools.cli.demos.dt_net_demos as cli
     import dt_tools.logger.logging_helper as lh
     lh.configure_logger()
     cli.demo()

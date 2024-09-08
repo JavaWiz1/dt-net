@@ -27,6 +27,7 @@ python-dateutil = "^2.9"
 dt-console = "*"
 dt-misc = "*"
 # dt-misc = {path = "../dt-misc", develop = true }
+# dt-console = {path = "../dt-console", develop = true }
 
 [[tool.poetry.source]]
 name = "PyPI"
@@ -38,8 +39,8 @@ url = "https://www.piwheels.org/simple"
 priority = "supplemental"
 
 
-[tool.poetry.scripts]
-dt_set_iptoken = 'dt_tools.cli.set_iphelper_token_cli:main'
+# [tool.poetry.scripts]
+# dt_set_iptoken = 'dt_tools.cli.set_iphelper_token_cli:main'
 
 
 [tool.poetry.group.dev.dependencies]
