@@ -320,7 +320,7 @@ def get_ip_from_mac(mac: str) -> str:
     elif len(mac) == 12:
         # sep = _mac_platform_separator()
         mac_byte_list = [mac[i:i+2] for i in range(0, 12, 2) ]
-        mac = OSHelper.mac_separator.join(mac_byte_list).lower()
+        mac = _mac_separator().join(mac_byte_list).lower()
     else:
         raise ValueError(f'MAC invalid format: {mac}')
     
