@@ -279,17 +279,20 @@ def get_hostname_from_ip(ip: str) -> str:
     return hostname
 
 @logger_wraps(level="TRACE")
-def get_ip_from_hostname(host_name: str) -> str:
+def get_ip_from_hostname(host_name: str = None) -> str:
     """
     Get IP address from hostname.
 
     Arguments:
-        host_name: Name of target host.
+        host_name: Name of target host, if missing, use local hostname
 
     Returns:
         IP address if found or '' if not found or error.
 
     """
+    if host_name is None:
+        host_name = socket.gethostname()
+
     try:
         ip = socket.gethostbyname(host_name)
     except socket.gaierror:
@@ -329,11 +332,14 @@ def get_ip_from_mac(mac: str) -> str:
     arp_line = arp[0]
     LOGGER.debug(f'  arp line: {arp}')
     ip = None
-    if platform.system() == "Windows":
-        ip = " ".join(arp_line.split()).split()[0]
-    else:
-        ip = " ".join(arp_line.split()).split()[2]
-    
+    try:
+        if platform.system() == "Windows":
+            ip = " ".join(arp_line.split()).split()[0]
+        else:
+            ip = " ".join(arp_line.split()).split()[2]
+    except Exception:
+        ip = None
+
     if ip is not None:
         LOGGER.debug(f'  MAC {mac} resolves to {ip}')
         return ip
