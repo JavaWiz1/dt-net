@@ -271,11 +271,16 @@ def get_hostname_from_ip(ip: str) -> str:
     Returns:
         Hostname if found else 'unknown' if not found or error.
     """
-    try:
-        host = socket.gethostbyaddr(ip)
-        hostname = host[0]
-    except:  # noqa: E722
-        hostname = _UNKNOWN
+    hostname = _UNKNOWN
+    if ip == get_local_ip():
+        hostname = get_local_hostname()
+    else:
+        try:
+            host = socket.gethostbyaddr(ip)
+            hostname = host[0]
+        except Exception as ex:
+            LOGGER.debug(f'Unable to get_hostname_from_ip("{ip}") - {repr(ex)}')
+
     return hostname
 
 @logger_wraps(level="TRACE")
@@ -377,6 +382,22 @@ def get_local_ip() -> str:
         s.close()
 
     return ip
+
+@logger_wraps(level="TRACE")
+def get_local_hostname() -> str:
+    """
+    Get local hostname
+
+    Returns:
+        str: local host name or 'unknown'
+    """
+    hostname = _UNKNOWN
+    try:
+        hostname = socket.gethostname()
+    except Exception as ex:
+        LOGGER.debug(f'Unable to get_local_hostname() - {repr(ex)}')
+
+    return hostname
 
 @logger_wraps(level="TRACE")
 def get_mac_address(ip: str) -> str:
