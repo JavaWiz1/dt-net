@@ -71,6 +71,7 @@ class WOL():
         Returns:
             bool: True if wol packet successfully sent, else False
         """
+        LOGGER.debug(f'send_wol_via_host("{host_name}")')
         return_status = False
         try:
             if nh.is_valid_ipaddress(host_name):
@@ -79,7 +80,6 @@ class WOL():
             else:
                 _ip = nh.get_ip_from_hostname(host_name)
                 _host = host_name
-            LOGGER.debug(f'  _ip: {_ip}  _host: {_host}')
             if not nh.is_valid_host(host_name):
                 host_type = 'ip address' if _host == nh._UNKNOWN else 'hostname'
                 cls._status_message = f'Invalid {host_type} [{host_name}]'
@@ -90,27 +90,36 @@ class WOL():
                 cls._status_message = f"Unable to determine MAC address for {host_name}"
                 LOGGER.debug(cls._status_message)
         except Exception as ex:
+            LOGGER.exception(repr(ex))
             cls._status_message = f'Unable to send wol packet to {hostname} - {repr(ex)}.'
 
         return return_status
     
     # === Private functions ==============================================================
     def send_wol_via_mac(cls, mac: str, wait_secs: int = 0, ip: str = None) -> bool:
-        macAddress = mac
-        # Check macaddress format and try to compensate.
-        if len(macAddress) == 12:
-            pass
-        elif len(macAddress) == 12 + 5:
-            sep = macAddress[2]
-            macAddress = macAddress.replace(sep, "")
-        else:
-            cls._status_message = f"Incorrect MAC address format: {macAddress}"
+        LOGGER.debug(f'send_wol_via_mac("{mac}")')
+        try:
+            mac_address = nh.unformat_mac(mac)
+        except ValueError as ve:
+            cls._status_message = f'Incorrectly formatted MAC address: {mac}'
+            LOGGER.error(f'{cls._status_message} - {repr(ve)}')
             return False
+        # macAddress = mac
+        # # Check macaddress format and try to compensate.
+        # if len(macAddress) == 12:
+        #     pass
+        # elif len(macAddress) == 12 + 5:
+        #     sep = macAddress[2]
+        #     macAddress = macAddress.replace(sep, "")
+        # else:
+        #     cls._status_message = f"Incorrect MAC address format: {macAddress}"
+        #     return False
 
         # Pad the synchronization stream.
-        data = b"FFFFFFFFFFFF" + (macAddress * 20).encode()
+        LOGGER.debug(f'pad the mac address: {mac_address}')
+        data = b"FFFFFFFFFFFF" + (mac_address * 20).encode()
         send_data = b""
-
+        LOGGER.debug(f'padded  mac address: {data}')
         # Split up the hex values and pack.
         for i in range(0, len(data), 2):
             send_data += struct.pack("B", int(data[i : i + 2], 16))
@@ -118,7 +127,12 @@ class WOL():
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         LOGGER.debug(f'Sending WOL to {mac}')
-        sock.sendto(send_data, ("<broadcast>", 9))  # 7
+        try:
+            sock.sendto(send_data, ("<broadcast>", 9))  # 7
+        except Exception as ex:
+            LOGGER.warning(f'Error sending WOL: {repr(ex)}')
+        finally:
+            sock.close()
 
         if wait_secs == 0:
             cls._status_message = "Packet sent."
@@ -165,14 +179,16 @@ class WOL():
 
 
 if __name__ == "__main__":
-    lh.configure_logger(log_level=_LOGLEVEL, log_format=lh.DEFAULT_CONSOLE_LOGFMT)
+    lh.configure_logger(log_level="DEBUG", log_format=lh.DEFAULT_CONSOLE_LOGFMT)
     wol = WOL()
-    hostname = 'nirvana'
-    LOGGER.info(f'Sending WOL to {hostname}...')
-    try:
-        if wol.send_wol_to_host(hostname, wait_secs=20):
-            LOGGER.success(f'  {wol.status_message}')
-        else:
-            LOGGER.warning(f'  {wol.status_message}')
-    except Exception as ex:
-        LOGGER.error(repr(ex))
+    hostnames = ['nirvana', 'badhost']
+    for hostname in hostnames:
+        LOGGER.info('')
+        LOGGER.info(f'Sending WOL to {hostname}...')
+        try:
+            if wol.send_wol_to_host(hostname, wait_secs=20):
+                LOGGER.success(f'  {wol.status_message}')
+            else:
+                LOGGER.warning(f'  {wol.status_message}')
+        except Exception as ex:
+            LOGGER.error(repr(ex))
