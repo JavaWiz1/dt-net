@@ -329,10 +329,14 @@ def get_ip_from_mac(mac: str) -> str:
     #     mac_byte_list = [mac[i:i+2] for i in range(0, 12, 2) ]
     #     mac = _mac_separator().join(mac_byte_list).lower()
     # else:
-    #     raise ValueError(f'MAC invalid format: {mac}')
-    
-    process_rslt = subprocess.run(_arp_entries_command(), capture_output=True)
-    rslt = process_rslt.stdout.decode('utf-8').splitlines()
+    #     raise ValueError(f'MAC invalid format Exception as ex: {mac}')
+    cmd_list = _arp_entries_command().split()
+    try:
+        process_rslt = subprocess.run(cmd_list, capture_output=True)
+        rslt = process_rslt.stdout.decode('utf-8').splitlines()
+    except Exception as ex:
+        LOGGER.error(f'get_ip_from_mac("{mac}"): unable to run {cmd_list}.  {repr(ex)}')
+        rslt = ""
     LOGGER.debug(f'MAC: {mac}\nRESULT: {rslt}')
     arp = [token for token in rslt if mac in token]
     arp_line = '' if len(arp) == 0 else arp[0]
