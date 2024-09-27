@@ -214,22 +214,23 @@ def is_port_open(host_name: str, port: int, timeout:float=1.0) -> bool:
     port_is_open = False
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(timeout)
+    LOGGER.debug(f'is_port_open() - attempting to connect to {host_name}:{port}')
     try:
-        LOGGER.debug(f'is_port_open() - attempting to connect to {host_name}:{port}')
         s.connect((host_name, int(port)))
         s.shutdown(socket.SHUT_WR)
-        s.close()
         LOGGER.debug('is_port_open() - connection successful.')
         port_is_open = True
     except:  # noqa: E722
         LOGGER.debug(f'is_port_open() - unable to connect to {host_name}:{port}')
+    finally:
+        s.close()
 
     return port_is_open
 
 @logger_wraps(level="TRACE")
 def is_valid_host(host_name: str) -> bool:
     """
-    Check if hos_tname is valid.  
+    Check if host_name is valid.  
     
     Args:
         host (str): Host name or IP address.
@@ -237,19 +238,18 @@ def is_valid_host(host_name: str) -> bool:
     Returns:
         bool: True if hostname is resolvable else False
     """
-    ip_addr = None
-    valid_host = False
-    try:
-        ip_addr = ipaddress.ip_address(host_name)
-    except ValueError as ve:
-        LOGGER.debug(f'host_name: {host_name} is NOT a valid IP address. [{ve}]')
+    # valid_host = False
+    # try:
+    #     ip_addr = ipaddress.ip_address(host_name)
+    # except ValueError as ve:
+    #     LOGGER.debug(f'host_name: {host_name} is NOT a valid IP address. [{ve}]')
 
     try:
-        if ip_addr is not None:
-            LOGGER.debug(f'is_valid_host() - gethostbyaddr({host_name})')
+        if is_valid_ipaddress(host_name):
+            LOGGER.debug(f'is_valid_host() - check via IP addr: {host_name}')
             _ = socket.gethostbyaddr(host_name)
         else:
-            LOGGER.debug(f'is_valid_host() - gethostbyname({host_name})')
+            LOGGER.debug(f'is_valid_host() - check via hostname: {host_name}')
             _ = socket.gethostbyname(host_name)
         valid_host = True
 
@@ -271,25 +271,33 @@ def get_hostname_from_ip(ip: str) -> str:
     Returns:
         Hostname if found else 'unknown' if not found or error.
     """
-    try:
-        host = socket.gethostbyaddr(ip)
-        hostname = host[0]
-    except:  # noqa: E722
-        hostname = _UNKNOWN
+    hostname = _UNKNOWN
+    if ip == get_local_ip():
+        hostname = get_local_hostname()
+    else:
+        try:
+            host = socket.gethostbyaddr(ip)
+            hostname = host[0]
+        except Exception as ex:
+            LOGGER.debug(f'Unable to get_hostname_from_ip("{ip}") - {repr(ex)}')
+
     return hostname
 
 @logger_wraps(level="TRACE")
-def get_ip_from_hostname(host_name: str) -> str:
+def get_ip_from_hostname(host_name: str = None) -> str:
     """
     Get IP address from hostname.
 
     Arguments:
-        host_name: Name of target host.
+        host_name: Name of target host, if missing, use local hostname
 
     Returns:
         IP address if found or '' if not found or error.
 
     """
+    if host_name is None:
+        host_name = socket.gethostname()
+
     try:
         ip = socket.gethostbyname(host_name)
     except socket.gaierror:
@@ -311,34 +319,36 @@ def get_ip_from_mac(mac: str) -> str:
     Returns:
         str: IP address
     """
-    if len(mac) == 17:
-        sep = mac[2]
-        mac = mac.replace(sep, _mac_separator()).lower()
-    elif len(mac) == 12:
-        # sep = _mac_platform_separator()
-        mac_byte_list = [mac[i:i+2] for i in range(0, 12, 2) ]
-        mac = _mac_separator().join(mac_byte_list).lower()
-    else:
-        raise ValueError(f'MAC invalid format: {mac}')
-    
-    # arp_cmd = cls._get_arp_cmd()
-    process_rslt = subprocess.run(_arp_entries_command(), capture_output=True)
-    rslt = process_rslt.stdout.decode('utf-8').splitlines()
+    mac = format_mac(mac)
+
+    cmd_list = _arp_entries_command().split()
+    try:
+        process_rslt = subprocess.run(cmd_list, capture_output=True)
+        rslt = process_rslt.stdout.decode('utf-8').splitlines()
+    except Exception as ex:
+        LOGGER.error(f'get_ip_from_mac("{mac}"): unable to run {cmd_list}.  {repr(ex)}')
+        rslt = ""
+
     LOGGER.debug(f'MAC: {mac}\nRESULT: {rslt}')
     arp = [token for token in rslt if mac in token]
-    arp_line = arp[0]
+    arp_line = '' if len(arp) == 0 else arp[0]
     LOGGER.debug(f'  arp line: {arp}')
     ip = None
-    if platform.system() == "Windows":
-        ip = " ".join(arp_line.split()).split()[0]
-    else:
-        ip = " ".join(arp_line.split()).split()[2]
-    
+    if len(arp_line) > 0:
+        try:
+            if platform.system() == "Windows":
+                ip = " ".join(arp_line.split()).split()[0]
+            else:
+                # This used to be [2] for some reason...
+                ip = " ".join(arp_line.split()).split()[0]
+        except Exception as ex:
+            LOGGER.error(f'  mac [{mac}]-problem resolving ip: {arp_line} - {repr(ex)}')
+
     if ip is not None:
         LOGGER.debug(f'  MAC {mac} resolves to {ip}')
         return ip
     
-    raise ValueError(f'Can not determine IP for mac {mac}')
+    raise ValueError(f'Unable to resolve IP for mac {mac}')
 
 def get_wan_ip() -> str:
     """
@@ -371,6 +381,22 @@ def get_local_ip() -> str:
         s.close()
 
     return ip
+
+@logger_wraps(level="TRACE")
+def get_local_hostname() -> str:
+    """
+    Get local hostname
+
+    Returns:
+        str: local host name or 'unknown'
+    """
+    hostname = _UNKNOWN
+    try:
+        hostname = socket.gethostname()
+    except Exception as ex:
+        LOGGER.debug(f'Unable to get_local_hostname() - {repr(ex)}')
+
+    return hostname
 
 @logger_wraps(level="TRACE")
 def get_mac_address(ip: str) -> str:
@@ -635,11 +661,58 @@ def _ipv4_mask_len(dotquad) -> int:
     return 32 - right0bits
 
 def _arp_entries_command() -> str:
-    return "arp -a" if OSHelper().is_windows() else "arp -n"
+    return "arp -a" if OSHelper().is_windows() else "/usr/sbin/arp -n"
+
+def format_mac(mac: str) -> str:
+    """
+    Format mac str to OS style
+
+    Args:
+        mac (str): mac str representation (12 or 17 characters)
+
+    Raises:
+        ValueError: Invalid mac string
+
+    Returns:
+        str: formatted as XX:XX:XX:XX (linux) or XX-XX-XX-XX (win)
+    """
+    if len(mac) == 17:
+        sep = mac[2]
+        fmt_mac = mac.replace(sep, _mac_separator()).lower()
+    elif len(mac) == 12:
+        # sep = _mac_platform_separator()
+        mac_byte_list = [mac[i:i+2] for i in range(0, 12, 2) ]
+        fmt_mac = _mac_separator().join(mac_byte_list).lower()
+    else:
+        raise ValueError(f'MAC invalid format: {mac}')
+    return fmt_mac
+
+def unformat_mac(mac: str) -> str:
+    """
+    Unformat mac address by removeing seperators from string
+
+    Args:
+        mac (str): formatted mac str
+
+    Returns:
+        str: mac address with no seperators (i.e. ':' linux or '-' win)
+    """
+    mac_address = mac
+    # Check macaddress format and try to compensate.
+    if len(mac_address) == 12:
+        LOGGER.debug('unformat_mac() - already unformattted')
+    elif len(mac_address) == 12 + 5:
+        mac_address = mac_address.replace(":", "").replace("-","")
+            
+    if len(mac_address) != 12:
+        LOGGER.debug(f'unformat_mac(): unknown format - {mac} / {mac_address}')
+        mac_address = mac
+
+    LOGGER.debug(f'unformat_mac()  in: {mac}  out: {mac_address}')
+    return mac_address
 
 def _mac_separator() -> str:
     return '-' if OSHelper.is_windows() else ":"
-
 
 
 if __name__ == "__main__":
