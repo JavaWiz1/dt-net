@@ -2,7 +2,6 @@ from typing import List
 
 from loguru import logger as LOGGER
 
-import dt_tools.console.console_helper as ch
 import dt_tools.logger.logging_helper as lh
 import dt_tools.net.net_helper as helper
 from dt_tools.console.console_helper import ColorFG, ConsoleHelper
@@ -10,70 +9,6 @@ from dt_tools.console.console_helper import ConsoleInputHelper as con_input
 from dt_tools.console.spinner import Spinner, SpinnerType
 from dt_tools.net.net_helper import LAN_Client
 
-# COMMON_PORTS = {
-#     "Echo service": 7,
-#     "FTP-data": 20,
-#     "FTP": 21,
-#     "SSH": 22,
-#     "Telnet": 23,
-#     "SMTP": 25,
-#     "DNS": 53,
-#     "TFTP": 69,
-#     "HTTP": 80,
-#     "Kerberos": 88,
-#     "Iso-tsap": 102,
-#     "POP3": 110,
-#     "MS EPMAP": 135,
-#     "NetBIOS-ns": 137,
-#     "NetBIOS-ssn": 139,
-#     "IMAP4": 143,
-#     "HP Openview (alarm)": 381,
-#     "HP Openview (data)": 383,
-#     "HTTPS": 443,
-#     "Kerberos (pwd)": 464,
-#     "SMTP TLS/SSL": 465,
-#     "SMTP (submission)": 587,
-#     "MS DCOM": 593,
-#     "LDAP TLS/SSL": 636,
-#     "MS Exchange": 691,
-#     "VMWare": 902,
-#     "FTP SSL (data)": 989,
-#     "FTP SSL (control)": 990,
-#     "IMAP4 SSL": 993,
-#     "POP3 SSL": 995,
-#     "MS RPC": 1025,
-#     "OpenVPN": 1194,
-#     "WASTE": 1337,
-#     "Cisco VQP": 1589,
-#     "Steam": 1725,
-#     "cPanel": 2082,
-#     "radsec": 2083,
-#     "Oracle DB": 2483,
-#     "Oracle DB SSL": 2484,
-#     "Semantec AV": 2967,
-#     "XBOX Live": 3074,
-#     "MySQL": 3306,
-#     "World of Warcraft": 3724,
-#     "Google Desktop": 4664,
-#     "PostgresSQL": 5432,
-#     "RFB/VNC": 5900,
-#     "IRC1": 6665,
-#     "IRC2": 6666,
-#     "IRC3": 6667,
-#     "IRC4": 6668,
-#     "IRC5": 6669,
-#     "BitTorrent": 6881,
-#     "Quicktime": 6970,
-#     "BitTorrent2": 6999,
-#     "Kaspersky CC": 8086,
-#     "Kaspersky": 8087,
-#     "VMWare Server": 8222,
-#     "PDL": 9100,
-#     "BackupExec": 10000,
-#     "NetBus": 12345,
-#     "Sub7": 27374,
-#     "Back Orifice": 31337,
-# }
 
 def display_LAN_report():
     ch = ConsoleHelper()
@@ -152,6 +87,13 @@ def demo():
     local_ip = helper.get_local_ip()
     # Get local machines External IP
     wan_ip = helper.get_wan_ip()
+
+    ConsoleHelper.print(f'Local Host: {helper.get_local_hostname()}')
+    ConsoleHelper.print(f'Local IP  : {local_ip}')
+    ConsoleHelper.print(f'WAN IP    : {wan_ip}')
+    ConsoleHelper.print(f'Workgroup : {helper.get_workgroup_name()}')
+    ConsoleHelper.print('')
+
     # Get list of client machines on LAN
     lan_list: List[LAN_Client] = helper.get_lan_clients_from_ARP_cache()
     ip_dict = {"Local IP": local_ip, "WAN IP": wan_ip, "Bad IP": "192.168.1.0" }
@@ -205,7 +147,8 @@ def demo():
     display_LAN_report()
 
 if __name__ == '__main__':
-    ch.enable_ctrl_c_handler()
+    from dt_tools.os.os_helper import OSHelper
+    OSHelper.enable_ctrl_c_handler()
     lh.configure_logger()
     demo()
     

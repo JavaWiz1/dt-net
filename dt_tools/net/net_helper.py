@@ -13,11 +13,12 @@ Functions to assist with network related information and tasks.
 
 """
 import ipaddress
+import pathlib
 import platform
 import random
 import socket
 import subprocess
-# import uuid
+
 from dataclasses import dataclass
 from time import sleep
 from typing import List, Union
@@ -26,8 +27,8 @@ import requests
 import scapy.all as scapy
 from loguru import logger as LOGGER
 
-from dt_tools.os.os_helper import OSHelper
 from dt_tools.logger.logging_helper import logger_wraps
+from dt_tools.os.os_helper import OSHelper
 
 _UNKNOWN = 'unknown'
 
@@ -398,6 +399,37 @@ def get_local_hostname() -> str:
 
     return hostname
 
+def get_workgroup_name() -> str:
+    """
+    Get windows worgroup/domain name
+
+    Returns:
+        str: Workgroup/domain name or 'unknown'
+    """
+    workgroup = _UNKNOWN
+    if OSHelper.is_windows():
+        try:
+            process_rslt = subprocess.run('systeminfo', capture_output=True)
+            rslt = process_rslt.stdout.decode('utf-8').splitlines()
+            for line in rslt:
+                if line.startswith('Domain:'):
+                    workgroup = line.split()[1]
+                    break
+        except Exception as ex:
+            LOGGER.error(f'get_workgroup_name(): unable to run systeminfo command.  {repr(ex)}')
+    else:
+        try:
+            smb_file = pathlib.Path('/etc/samba/smb.conf')
+            if smb_file.exists():
+                for line in smb_file.read_text().splitlines():
+                    if line.strip().startswith('workgroup'):
+                        workgroup = line.split()[2]
+                        break
+        except Exception as ex:
+            LOGGER.error(f'get_workgroup_name(): unable to run systeminfo command.  {repr(ex)}')
+
+    return workgroup
+        
 @logger_wraps(level="TRACE")
 def get_mac_address(ip: str) -> str:
     """
@@ -720,3 +752,4 @@ if __name__ == "__main__":
     import dt_tools.logger.logging_helper as lh
     lh.configure_logger()
     cli.demo()
+    print(get_workgroup_name())
