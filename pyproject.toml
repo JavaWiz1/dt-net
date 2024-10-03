@@ -39,10 +39,6 @@ url = "https://www.piwheels.org/simple"
 priority = "supplemental"
 
 
-# [tool.poetry.scripts]
-# dt_set_iptoken = 'dt_tools.cli.set_iphelper_token_cli:main'
-
-
 [tool.poetry.group.dev.dependencies]
 sphinx-rtd-theme = "^2.0.0"
 

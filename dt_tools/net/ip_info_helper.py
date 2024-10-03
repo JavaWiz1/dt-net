@@ -64,7 +64,7 @@ from loguru import logger as LOGGER
 import dt_tools.net.ip_info_helper as ih
 from dt_tools.net import net_helper as nh
 from dt_tools.console.console_helper import ConsoleHelper as console
-from dt_tools.console.console_helper import TextStyle
+from dt_tools.console.console_helper import ColorFG, TextStyle
 
 
 BASE_URL='https://ipinfo.io'
@@ -361,7 +361,33 @@ class IpHelper():
             LOGGER.success(f'- {found} entries found.')
 
         return found_keys
-        
+
+    @classmethod
+    def _load_mac_cache(cls):
+        if not MAC_INFO_LOCATION.parent.exists():
+            LOGGER.debug(f'Create directory {MAC_INFO_LOCATION.parent}')
+            MAC_INFO_LOCATION.parent.mkdir(exist_ok=True)
+        if not MAC_INFO_LOCATION.exists():
+            LOGGER.debug(f'Create MAC Cache file: {MAC_INFO_LOCATION}')
+            MAC_INFO_LOCATION.touch(exist_ok=True)
+        buffer = MAC_INFO_LOCATION.read_text()
+        if buffer == "":
+            buffer = "{}"
+        LOGGER.debug(f'Load MAC info from {MAC_INFO_LOCATION}')
+        IpHelper._mac_info = json.loads(buffer)
+
+    @classmethod
+    def list_mac_cache(cls):
+        LOGGER.info(f'MAC Cache [{MAC_INFO_LOCATION}]')
+        LOGGER.info('')
+        if len(cls._mac_info) == 0:
+            LOGGER.warning('Sorry MAC cache is empty.')
+        for key, value in cls._mac_info.items():
+            LOGGER.success(f'=== {key} =============================================')
+            for k,v in value.items():
+                LOGGER.info(f'    {k:10} : {v}')
+            LOGGER.info('')
+
     @classmethod
     def list_cache(cls, ip: str = None, show_all_fields: bool = True):
         """
@@ -435,17 +461,7 @@ class IpHelper():
                 LOGGER.warning(f'  {repr(ex)}')
 
         if IpHelper._mac_info is None:
-            if not MAC_INFO_LOCATION.parent.exists():
-                LOGGER.debug(f'Create directory {MAC_INFO_LOCATION.parent}')
-                MAC_INFO_LOCATION.parent.mkdir(exist_ok=True)
-            if not MAC_INFO_LOCATION.exists():
-                LOGGER.debug(f'Create MAC Cache file: {MAC_INFO_LOCATION}')
-                MAC_INFO_LOCATION.touch(exist_ok=True)
-            buffer = MAC_INFO_LOCATION.read_text()
-            if buffer == "":
-                buffer = "{}"
-            LOGGER.debug(f'Load MAC info from {MAC_INFO_LOCATION}')
-            IpHelper._mac_info = json.loads(buffer)
+            cls._load_mac_cache()
 
         _CACHE_SEMAPHORE.release()
 
