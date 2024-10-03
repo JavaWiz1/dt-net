@@ -156,7 +156,7 @@ class ScannerBase(ABC):
         if self._test_datafile is not None:
             cmd_output = self._get_raw_data()
         else:
-            cmd = self.scan_cmd.replace('%interface%', self._interface)
+            cmd = self._scan_cmd.replace('%interface%', self._interface)
             cmd_output, ret_cd = self._execute_process(cmd)
             if self._output_datafile and ret_cd == 0:
                 try:
