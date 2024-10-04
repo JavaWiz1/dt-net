@@ -29,6 +29,7 @@ from loguru import logger as LOGGER
 
 import dt_tools.logger.logging_helper as lh
 import dt_tools.net.net_helper as nh
+from dt_tools.console.spinner import Spinner, SpinnerType
 
 # from dt_tools.console.progress_bar import ProgressBar
 
@@ -80,6 +81,7 @@ class WOL():
             else:
                 _ip = nh.get_ip_from_hostname(host_name)
                 _host = host_name
+
             if not nh.is_valid_host(host_name):
                 host_type = 'ip address' if _host == nh._UNKNOWN else 'hostname'
                 cls._status_message = f'Invalid {host_type} [{host_name}]'
@@ -104,16 +106,6 @@ class WOL():
             cls._status_message = f'Incorrectly formatted MAC address: {mac}'
             LOGGER.error(f'{cls._status_message} - {repr(ve)}')
             return False
-        # macAddress = mac
-        # # Check macaddress format and try to compensate.
-        # if len(macAddress) == 12:
-        #     pass
-        # elif len(macAddress) == 12 + 5:
-        #     sep = macAddress[2]
-        #     macAddress = macAddress.replace(sep, "")
-        # else:
-        #     cls._status_message = f"Incorrect MAC address format: {macAddress}"
-        #     return False
 
         # Pad the synchronization stream.
         LOGGER.debug(f'pad the mac address: {mac_address}')
@@ -146,7 +138,7 @@ class WOL():
                 return True
 
         is_online = cls._wait_for_device_to_come_online(ip, wait_secs)
-        hostname = nh.get_hostname_from_ip(ip)
+        hostname = nh.get_hostname_from_ip(ip) if is_online else None
         if hostname:
             LOGGER.debug(f'Host: {hostname} | MAC: {mac} | {ip} - is online {is_online}')
         else:
@@ -167,6 +159,8 @@ class WOL():
     def _wait_for_device_to_come_online(cls, ip: str, wait_secs: int) -> bool:
         is_online = nh.ping(ip)
         if not is_online:
+            spinner = Spinner(caption=f'- Waiting for {ip} to come online', spinner=SpinnerType.DOTS, show_elapsed=True)
+            spinner.start_spinner()
             LOGGER.debug(f'Waiting for {wait_secs} seconds for device to come online.')
             start = time.time()
             elapsed = 0
@@ -174,12 +168,13 @@ class WOL():
                 time.sleep(1)
                 is_online = nh.ping(ip)
                 elapsed = time.time() - start
+            spinner.stop_spinner()
 
         return is_online
 
 
 if __name__ == "__main__":
-    lh.configure_logger(log_level="DEBUG", log_format=lh.DEFAULT_CONSOLE_LOGFMT)
+    lh.configure_logger(log_level="TRACE", log_format=lh.DEFAULT_CONSOLE_LOGFMT)
     wol = WOL()
     hostnames = ['nirvana', 'badhost']
     for hostname in hostnames:

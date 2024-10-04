@@ -21,7 +21,7 @@ import subprocess
 
 from dataclasses import dataclass
 from time import sleep
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import requests
 import scapy.all as scapy
@@ -363,6 +363,31 @@ def get_wan_ip() -> str:
 
     ip_info, _ = IpHelper.get_wan_ip_info()
     return ip_info.get('ip', _UNKNOWN)
+
+
+def get_lat_lon_for_ip(ip: str) -> Tuple[float, float]:
+    """
+    Get GPS coordinates (lat/lon) for Internet IP address.
+
+    Args:
+        ip (str): Internet IP address, local address will NOT work.
+
+    Returns:
+        Tuple[float, float]: latitude, longitude or 0.0, 0,0 if not found.
+    """
+    lat: float = 0.0
+    lon: float = 0.0
+    url = f'https://ipapi.co/{ip}/latlong/'
+    #headers = {'user-agent': 'ipapi.co/#ipapi-python-v1.0.4'} 
+    headers = {'user-agent': 'ipapi.co/#custom'}               
+    resp = requests.get(url, headers=headers)
+    if resp.text.count(',') == 1:
+        token = resp.text.split(',')
+        lat = token[0]
+        lon = token[1]
+    LOGGER.debug(f'Lat/Lon identified - ip: {ip}  lat: {lat}  lon: {lon}')
+    return lat, lon
+
 
 @logger_wraps(level="TRACE")
 def get_local_ip() -> str:
