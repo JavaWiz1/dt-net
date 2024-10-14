@@ -54,6 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="dt_tools.net.wol.html">dt_tools.net.wol module</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">dt-net</a></li>
 </ul>
 
         </div>
@@ -130,6 +131,26 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.format_mac">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">format_mac</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#format_mac"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.format_mac" title="Link to this definition"></a></dt>
+<dd><p>Format mac str to OS style</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mac</strong> (<em>str</em>) – mac str representation (12 or 17 characters)</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – Invalid mac string</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>formatted as XX:XX:XX:XX (linux) or XX-XX-XX-XX (win)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.get_hostname_from_ip">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_hostname_from_ip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_hostname_from_ip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_hostname_from_ip" title="Link to this definition"></a></dt>
 <dd><p>Get hostname from IP address.</p>
@@ -145,11 +166,11 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.get_ip_from_hostname">
-<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_ip_from_hostname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_ip_from_hostname"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_ip_from_hostname" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_ip_from_hostname</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_ip_from_hostname"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_ip_from_hostname" title="Link to this definition"></a></dt>
 <dd><p>Get IP address from hostname.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>host_name</strong> – Name of target host.</p>
+<dd class="field-odd"><p><strong>host_name</strong> – Name of target host, if missing, use local hostname</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>IP address if found or ‘’ if not found or error.</p>
@@ -228,6 +249,37 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.get_lat_lon_for_ip">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_lat_lon_for_ip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_lat_lon_for_ip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_lat_lon_for_ip" title="Link to this definition"></a></dt>
+<dd><p>Get GPS coordinates (lat/lon) for Internet IP address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ip</strong> (<em>str</em>) – Internet IP address, local address will NOT work.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>latitude, longitude or 0.0, 0,0 if not found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[float, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.get_local_hostname">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_local_hostname</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_local_hostname"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_local_hostname" title="Link to this definition"></a></dt>
+<dd><p>Get local hostname</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>local host name or ‘unknown’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.get_local_ip">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_local_ip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_local_ip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_local_ip" title="Link to this definition"></a></dt>
 <dd><p>Get local IP address</p>
@@ -298,6 +350,20 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.get_workgroup_name">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">get_workgroup_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#get_workgroup_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.get_workgroup_name" title="Link to this definition"></a></dt>
+<dd><p>Get windows worgroup/domain name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Workgroup/domain name or ‘unknown’</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_ipv4_address">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">is_ipv4_address</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#is_ipv4_address"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.is_ipv4_address" title="Link to this definition"></a></dt>
 <dd><p>Validate IPv4 address in dotted-quad notation.</p>
@@ -358,7 +424,7 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="dt_tools.net.net_helper.is_valid_host">
 <span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">is_valid_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#is_valid_host"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.is_valid_host" title="Link to this definition"></a></dt>
-<dd><p>Check if hos_tname is valid.</p>
+<dd><p>Check if host_name is valid.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>host</strong> (<em>str</em>) – Host name or IP address.</p>
@@ -402,6 +468,23 @@
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>True if host responds, False if timeout or error.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dt_tools.net.net_helper.unformat_mac">
+<span class="sig-prename descclassname"><span class="pre">dt_tools.net.net_helper.</span></span><span class="sig-name descname"><span class="pre">unformat_mac</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/dt_tools/net/net_helper.html#unformat_mac"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dt_tools.net.net_helper.unformat_mac" title="Link to this definition"></a></dt>
+<dd><p>Unformat mac address by removeing seperators from string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mac</strong> (<em>str</em>) – formatted mac str</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>mac address with no seperators (i.e. ‘:’ linux or ‘-’ win)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
 </dd></dl>

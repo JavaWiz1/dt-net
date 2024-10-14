@@ -20,7 +20,9 @@
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="dt_tools.cli namespace" href="dt_tools.cli.html" />
+    <link rel="prev" title="dt-net" href="modules.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -43,8 +45,16 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dt-net</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dt_tools namespace</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dt_tools.cli.html">dt_tools.cli namespace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dt_tools.net.html">dt_tools.net namespace</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -61,6 +71,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dt-net</a></li>
       <li class="breadcrumb-item active">dt_tools namespace</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/dt_tools.rst.txt" rel="nofollow"> View page source</a>
@@ -90,11 +101,7 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="dt_tools.cli.html#submodules">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="dt_tools.cli.set_iphelper_token_cli.html">dt_tools.cli.set_iphelper_token_cli module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="dt_tools.cli.set_iphelper_token_cli.html#dt_tools.cli.set_iphelper_token_cli.manage_token"><code class="docutils literal notranslate"><span class="pre">manage_token()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="dt_tools.cli.html#submodules">Submodules</a><ul class="simple">
 </ul>
 </li>
 </ul>
@@ -110,6 +117,7 @@
 <li class="toctree-l5"><a class="reference internal" href="dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.get_wan_ip_info"><code class="docutils literal notranslate"><span class="pre">IpHelper.get_wan_ip_info()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.is_cached"><code class="docutils literal notranslate"><span class="pre">IpHelper.is_cached()</span></code></a></li>
 <li class="toctree-l5"><a class="reference internal" href="dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.list_cache"><code class="docutils literal notranslate"><span class="pre">IpHelper.list_cache()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="dt_tools.net.ip_info_helper.html#dt_tools.net.ip_info_helper.IpHelper.list_mac_cache"><code class="docutils literal notranslate"><span class="pre">IpHelper.list_mac_cache()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -123,22 +131,27 @@
 <li class="toctree-l5"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.LAN_Client.vendor"><code class="docutils literal notranslate"><span class="pre">LAN_Client.vendor</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.format_mac"><code class="docutils literal notranslate"><span class="pre">format_mac()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_hostname_from_ip"><code class="docutils literal notranslate"><span class="pre">get_hostname_from_ip()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_ip_from_hostname"><code class="docutils literal notranslate"><span class="pre">get_ip_from_hostname()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_ip_from_mac"><code class="docutils literal notranslate"><span class="pre">get_ip_from_mac()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_lan_clients_ARP_broadcast"><code class="docutils literal notranslate"><span class="pre">get_lan_clients_ARP_broadcast()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_lan_clients_from_ARP_cache"><code class="docutils literal notranslate"><span class="pre">get_lan_clients_from_ARP_cache()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_lat_lon_for_ip"><code class="docutils literal notranslate"><span class="pre">get_lat_lon_for_ip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_local_hostname"><code class="docutils literal notranslate"><span class="pre">get_local_hostname()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_local_ip"><code class="docutils literal notranslate"><span class="pre">get_local_ip()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_mac_address"><code class="docutils literal notranslate"><span class="pre">get_mac_address()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_port_name"><code class="docutils literal notranslate"><span class="pre">get_port_name()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_vendor_from_mac"><code class="docutils literal notranslate"><span class="pre">get_vendor_from_mac()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_wan_ip"><code class="docutils literal notranslate"><span class="pre">get_wan_ip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.get_workgroup_name"><code class="docutils literal notranslate"><span class="pre">get_workgroup_name()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_ipv4_address"><code class="docutils literal notranslate"><span class="pre">is_ipv4_address()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_ipv6_address"><code class="docutils literal notranslate"><span class="pre">is_ipv6_address()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_port_open"><code class="docutils literal notranslate"><span class="pre">is_port_open()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_valid_host"><code class="docutils literal notranslate"><span class="pre">is_valid_host()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.is_valid_ipaddress"><code class="docutils literal notranslate"><span class="pre">is_valid_ipaddress()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.ping"><code class="docutils literal notranslate"><span class="pre">ping()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="dt_tools.net.net_helper.html#dt_tools.net.net_helper.unformat_mac"><code class="docutils literal notranslate"><span class="pre">unformat_mac()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="dt_tools.net.nic.html">dt_tools.net.nic module</a><ul>
@@ -239,7 +252,10 @@
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="dt-net" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dt_tools.cli.html" class="btn btn-neutral float-right" title="dt_tools.cli namespace" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
