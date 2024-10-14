@@ -18,7 +18,8 @@ Features include:
         </ul>
         <li>A free **API token** is required to call the API</li>
         <li>Tokens can be aquired by going to https://ipinfo.io/signup</li>
-        <li>Register token via dt_tools.cli.set_iphelper_token.py</li>
+        <li>Register token via dt_tools.cli.set_api_tokens.py (from [dt-foundation package](https://github.com/JavaWiz1/dt-foundation) 
+            or [dt-cli-tools package](https://github.com/JavaWiz1/dt-cli-tools))</li>
     </ul>
     <li><b>net_helper</b> - Helper methods for</li>
     <ul>
@@ -27,7 +28,7 @@ Features include:
         <li>LAN Scan: list of LAN clients.</li>
     </ul>
     <li><b>wifi_scanner</b> - Identify wifi access points and their attributes.</li>
-    <li><b>wol</b> - Send WOL packets to target hosts</li>
+    <li><b>wol</b> - Send WOL packets to target hosts.</li>
 </ul>
 
 
