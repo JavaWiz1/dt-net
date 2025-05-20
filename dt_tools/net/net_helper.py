@@ -313,23 +313,32 @@ def get_ip_from_mac(mac: str, via_arp_broadcast: bool = False) -> str:
     Returns:
         str: IP address
     """
-    mac = format_mac(mac)
+    ip  = None
+    mac = None
+    try:
+        mac = format_mac(mac)
+    except ValueError as ve:
+        LOGGER.error(f'Invalid MAC: {mac} unable to get IP.  {ve}')
 
-    if via_arp_broadcast:
-        LOGGER.debug(f'Attempt to resolve mac [{mac}] to IP via ARP Broadcast')
-        client_list = get_lan_clients_ARP_broadcast()
-    else:
-        LOGGER.debug(f'Attempt to resolve mac [{mac}] to IP via ARP Cache')
-        client_list = get_lan_clients_from_ARP_cache()
+    if mac is not None:
+        if via_arp_broadcast:
+            LOGGER.debug(f'Attempt to resolve mac [{mac}] to IP via ARP Broadcast')
+            client_list = get_lan_clients_ARP_broadcast()
+        else:
+            LOGGER.debug(f'Attempt to resolve mac [{mac}] to IP via ARP Cache')
+            client_list = get_lan_clients_from_ARP_cache()
 
-    ip = None
-    mac_lc = mac.lower()
-    for client in client_list:
-        client_mac = format_mac(client.mac).lower()
-        LOGGER.trace(f'target mac: {mac_lc}  client mac: {client_mac}')
-        if mac_lc == client_mac:
-            ip = client.ip
-            break
+        mac_lc = mac.lower()
+        for client in client_list:
+            try:
+                client_mac = format_mac(client.mac).lower()
+            except ValueError as ve:
+                LOGGER.error(f'Invalid mac client list: {client}  {ve}')
+            else:
+                LOGGER.trace(f'target mac: {mac_lc}  client mac: {client_mac}')
+                if mac_lc == client_mac:
+                    ip = client.ip
+                    break
 
     if ip is not None:
         LOGGER.debug(f'  MAC {mac} resolves to {ip}')
