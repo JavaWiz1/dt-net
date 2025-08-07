@@ -518,7 +518,7 @@ def get_vendor_from_mac(mac: str) -> str:
 
 
 # == ARP Calls ===============================================================================================
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_vendor: bool = False) -> List[LAN_Client]:
     """
     Retrieve a list of LAN_Clients from the local network.
@@ -542,7 +542,7 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
     if OSHelper.is_linux() and not OSHelper.is_linux_root():
         LOGGER.critical('You must be root on linux for ARP_Broadcast to work')
         raise PermissionError('Must be root')
-
+    scapy.conf.verb = 0  # Supress logging messages
     request = scapy.ARP()
     request.pdst = _get_target_protocol_address_pdst() # '192.168.1.1/24'
     broadcast = scapy.Ether() 
@@ -564,7 +564,7 @@ def get_lan_clients_ARP_broadcast(include_hostname: bool = False, include_mac_ve
 
     return lan_client_list        
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_vendor: bool = False) -> List[LAN_Client]:
     """     
     Retrieve a list of LAN_Clients from the local network.
@@ -681,7 +681,7 @@ def is_ip_local(ip: str) -> bool:
 
 
 # == Private Methods ==========================================================================
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def _get_hostname_and_or_vendor(client_list: list, include_hostname: bool, include_mac_vendor: bool, bypass_cache: bool = False) -> List[LAN_Client]:
 
     updated_list: List[LAN_Client] = []
@@ -765,6 +765,8 @@ def format_mac(mac: str) -> str:
     Returns:
         str: formatted as XX:XX:XX:XX (linux) or XX-XX-XX-XX (win)
     """
+    if mac is None:
+        raise ValueError('MAC address cannot be None.')
     if len(mac) == 17:
         sep = mac[2]
         fmt_mac = mac.replace(sep, _mac_separator()).lower()

@@ -1,7 +1,7 @@
 [tool.poetry]
 package-mode = true 
 name = "dt-net"
-version = "0.1.31"
+version = "0.1.32"
 description = "Network helper tools"
 authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
 readme = "README.md"
@@ -40,7 +40,7 @@ priority = "supplemental"
 
 
 [tool.poetry.group.dev.dependencies]
-sphinx-rtd-theme = "^2.0.0"
+# sphinx-rtd-theme = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
