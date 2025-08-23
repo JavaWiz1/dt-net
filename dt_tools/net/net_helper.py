@@ -313,7 +313,6 @@ def get_ip_from_mac(mac: str, via_arp_broadcast: bool = False) -> Union[str, Non
         str: IP address or None
     """
     ip  = None
-    mac = None
     try:
         mac = format_mac(mac)
     except ValueError as ve:
