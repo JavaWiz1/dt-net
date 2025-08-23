@@ -585,8 +585,11 @@ def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_v
     LOGGER.debug(f'ARP command: {arp_cmd}')
     process_rslt = subprocess.run(arp_cmd, capture_output=True)
     result = process_rslt.stdout.decode('utf-8').splitlines()
-    # Remove lines that are not IPs
-    tokens =  [ line.strip() for line in result if line.count('.')==3 and not line.startswith('Interface')]
+    # Remove lines that are not valid for parsing
+    tokens =  [ line.strip() for line in result \
+               if line.count('.')==3 and \
+                    not line.startswith('Interface') and \
+                    not '(incomplete)' in line ]
 
     lan_client_list = []
     for arp_entry in tokens:
@@ -596,8 +599,11 @@ def get_lan_clients_from_ARP_cache(include_hostname: bool = False, include_mac_v
         if is_ip_local(ip) and not ip.endswith('.255'):
             mac = arp_field[1] if OSHelper().is_windows() else arp_field[2]
             mac = mac.replace('-',':').upper()
-            entry = LAN_Client(ip, mac)
-            lan_client_list.append(entry)
+            if mac.count(':') != 5:
+                LOGGER.error(f'-Invalid mac [{mac}] from {arp_entry}')
+            else:
+                entry = LAN_Client(ip, mac)
+                lan_client_list.append(entry)
 
     if include_hostname or include_mac_vendor:
         lan_client_list = _get_hostname_and_or_vendor(lan_client_list, include_hostname, include_mac_vendor, bypass_cache=False)
@@ -817,5 +823,7 @@ if __name__ == "__main__":
         print(get_ip_from_mac(mac))
     except Exception:
         print(get_ip_from_mac(mac, via_arp_broadcast=True))
+
+    print(get_lan_clients_from_ARP_cache())
     print('all done.')
     
