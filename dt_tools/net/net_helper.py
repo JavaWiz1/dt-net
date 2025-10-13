@@ -28,7 +28,7 @@ from loguru import logger as LOGGER
 from dt_tools.logger.logging_helper import logger_wraps
 from dt_tools.os.os_helper import OSHelper
 
-_UNKNOWN = 'unknown'
+_UNKNOWN = 'unknown_host'
 
 COMMON_PORTS = {
     "Echo service": 7,
@@ -212,22 +212,25 @@ def is_port_open(host_name: str, port: int, timeout:float=1.0) -> bool:
         bool: True if port is open else False
     """
     port_is_open = False
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(timeout)
-    LOGGER.debug(f'is_port_open() - attempting to connect to {host_name}:{port}')
-    try:
-        s.connect((host_name, int(port)))
-        s.shutdown(socket.SHUT_WR)
-        LOGGER.debug('is_port_open() - connection successful.')
-        port_is_open = True
-    except:  # noqa: E722
-        LOGGER.debug(f'is_port_open() - unable to connect to {host_name}:{port}')
-    finally:
-        s.close()
+    if 'unknown' in host_name.lower():
+        LOGGER.error(f'is_port_open() invalid hostname: {host_name}')
+    else:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        LOGGER.debug(f'is_port_open() - attempting to connect to {host_name}:{port}')
+        try:
+            s.connect((host_name, int(port)))
+            s.shutdown(socket.SHUT_WR)
+            LOGGER.debug('is_port_open() - connection successful.')
+            port_is_open = True
+        except:  # noqa: E722
+            LOGGER.debug(f'is_port_open() - unable to connect to {host_name}:{port}')
+        finally:
+            s.close()
 
     return port_is_open
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def is_valid_host(host_name: str) -> bool:
     """
     Check if host_name is valid.  
@@ -238,23 +241,27 @@ def is_valid_host(host_name: str) -> bool:
     Returns:
         bool: True if hostname is resolvable else False
     """
-    try:
-        if is_valid_ipaddress(host_name):
-            LOGGER.debug(f'is_valid_host() - check via IP addr: {host_name}')
-            _ = socket.gethostbyaddr(host_name)
-        else:
-            LOGGER.debug(f'is_valid_host() - check via hostname: {host_name}')
-            _ = socket.gethostbyname(host_name)
-        valid_host = True
+    valid_host = False
+    if 'unknown' in host_name.lower():
+        LOGGER.error(f'is_valid_host() invalid hostname: {host_name}')
+    else:
+        try:
+            if is_valid_ipaddress(host_name):
+                LOGGER.debug(f'is_valid_host() - check via IP addr: {host_name}')
+                _ = socket.gethostbyaddr(host_name)
+            else:
+                LOGGER.debug(f'is_valid_host() - check via hostname: {host_name}')
+                _ = socket.gethostbyname(host_name)
+            valid_host = True
 
-    except (socket.gaierror, socket.herror):
-        valid_host = False
+        except (socket.gaierror, socket.herror):
+            valid_host = False
 
     return valid_host
     
 
 # == get hostname, ip, MAC, vendor routins ======================================================
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_hostname_from_ip(ip: str) -> str:
     """
     Get hostname from IP address.
@@ -274,10 +281,12 @@ def get_hostname_from_ip(ip: str) -> str:
             hostname = host[0]
         except Exception as ex:
             LOGGER.debug(f'Unable to get_hostname_from_ip("{ip}") - {repr(ex)}')
+    if hostname == _UNKNOWN:
+        LOGGER.error(f'get_hostname_from_ip() unable to resolve {ip} returning {_UNKNOWN}')
 
     return hostname
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_ip_from_hostname(host_name: str = None) -> str:
     """
     Get IP address from hostname.
@@ -382,7 +391,7 @@ def get_lat_lon_for_ip(ip: str) -> Tuple[float, float]:
     return lat, lon
 
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_local_ip() -> str:
     """
     Get local IP address
@@ -402,7 +411,7 @@ def get_local_ip() -> str:
 
     return ip
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_local_hostname() -> str:
     """
     Get local hostname
@@ -469,7 +478,7 @@ def get_mac_address(ip: str) -> str:
         mac = str(mac).upper()
     return mac
 
-@logger_wraps(level="TRACE")
+# @logger_wraps(level="TRACE")
 def get_vendor_from_mac(mac: str) -> str:
     """
     Return the vendor name for specified MAC address
