@@ -385,6 +385,8 @@ def get_wan_ip() -> str:
     ip_info, _ = IpHelper.get_wan_ip_info()
     return ip_info.get('ip', _UNKNOWN)
 
+def is_connected_to_network() -> bool:
+    return 'Unknown' != get_default_gateway()
 
 def get_lat_lon_for_ip(ip: str) -> Tuple[float, float]:
     """
