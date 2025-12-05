@@ -20,6 +20,7 @@ import subprocess
 from dataclasses import dataclass
 from time import sleep, time
 from typing import List, Tuple, Union
+import netifaces
 
 import requests
 import scapy.all as scapy
@@ -353,6 +354,24 @@ def get_ip_from_mac(mac: str, via_arp_broadcast: bool = False) -> Union[str, Non
     return ip
     # raise ValueError(f'Unable to resolve IP for mac {mac}')
     
+
+def get_default_gateway() -> str:
+    """
+    Get the default gateway.
+
+    Returns:
+        str: WAN IP or 'Unknown'
+    """
+
+    try:
+        gws = netifaces.gateways()
+        default_gateway = gws['default'][netifaces.AF_INET][0]
+        # print(f"Default Gateway IP: {default_gateway}")
+    except KeyError:
+        default_gateway = 'Unknown'
+
+    return default_gateway
+
 
 def get_wan_ip() -> str:
     """

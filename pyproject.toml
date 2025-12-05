@@ -28,6 +28,7 @@ dt-foundation = "*"
 dt-console = "*"
 # dt-foundation = {path = "../dt-foundation", develop = true }
 # dt-console = {path = "../dt-console", develop = true }
+netifaces = "^0.11.0"
 
 [[tool.poetry.source]]
 name = "PyPI"

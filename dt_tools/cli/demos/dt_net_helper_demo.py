@@ -88,10 +88,13 @@ def demo():
     # Get local machines External IP
     wan_ip = helper.get_wan_ip()
 
+    gateway = helper.get_default_gateway()
+
     ConsoleHelper.print(f'Local Host: {helper.get_local_hostname()}')
     ConsoleHelper.print(f'Local IP  : {local_ip}')
     ConsoleHelper.print(f'WAN IP    : {wan_ip}')
     ConsoleHelper.print(f'Workgroup : {helper.get_workgroup_name()}')
+    ConsoleHelper.print(f'Gateway   : {gateway}')
     ConsoleHelper.print('')
 
     # Get list of client machines on LAN
